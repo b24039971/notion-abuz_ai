@@ -12,6 +12,15 @@
   </p>
 
   <p>
+    <a href="https://t.me/abuz_ai" target="_blank">
+      <img src="https://img.shields.io/badge/Telegram-%D0%9A%D0%B0%D0%BD%D0%B0%D0%BB-0088cc?style=flat-square&logo=telegram&logoColor=white" alt="Telegram">
+    </a>
+    <a href="https://youtube.com/channel/UC15FjPfHK0F6TpUHJpCfINA?si=sPZ1eTUe7samELP3" target="_blank">
+      <img src="https://img.shields.io/badge/YouTube-%D0%9A%D0%B0%D0%BD%D0%B0%D0%BB-ff0000?style=flat-square&logo=youtube&logoColor=white" alt="YouTube">
+    </a>
+  </p>
+
+  <p>
     <a href="#быстрый-старт">Быстрый старт</a> •
     <a href="#основные-возможности">Основные возможности</a> •
     <a href="#архитектура">Архитектура</a> •
@@ -192,6 +201,14 @@ email----password----client_id----refresh_token
 cp example.config.yaml config.yaml
 ```
 Или пропустить этот шаг — сервер автоматически сгенерирует `config.yaml` при первом старте с безопасными случайными ключами.
+
+---
+
+## Сообщество и поддержка
+
+Присоединяйтесь к нашим сообществам для получения свежих обновлений, гайдов и поддержки:
+- **Telegram-канал**: [t.me/abuz_ai](https://t.me/abuz_ai) — абуз нейросетей, полезный софт, инсайды и общение.
+- **YouTube-канал**: [Вайб Кодер](https://youtube.com/channel/UC15FjPfHK0F6TpUHJpCfINA?si=sPZ1eTUe7samELP3) — обзоры, инструкции по установке и настройке.
 
 ---
 

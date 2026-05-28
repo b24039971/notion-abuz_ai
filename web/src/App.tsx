@@ -61,6 +61,20 @@ const IconTrash = () => (
   </svg>
 )
 
+const IconTelegram = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m22 2-7 20-4-9-9-4Z"/>
+    <path d="M22 2 11 13"/>
+  </svg>
+)
+
+const IconYoutube = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17Z"/>
+    <polygon points="10 15 15 12 10 9 10 15"/>
+  </svg>
+)
+
 // --- Add Account Modal ---
 
 function AddAccountModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
@@ -276,6 +290,28 @@ function Header({ query, onQuery, onLogout, authRequired }: {
         </span>
       </div>
       <div className="flex items-center gap-3">
+        <a
+          href="https://t.me/abuz_ai"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 text-[11px] font-mono text-[#00ff66]/80 hover:text-[#00ff66] transition-all bg-[#00ff66]/5 hover:bg-[#00ff66]/10 px-2.5 py-1 rounded border border-[#00ff66]/15 hover:border-[#00ff66]/30 hover:shadow-[0_0_8px_rgba(0,255,102,0.15)]"
+          style={{ textDecoration: 'none' }}
+          title="Наш Telegram-канал"
+        >
+          <IconTelegram />
+          <span>Telegram</span>
+        </a>
+        <a
+          href="https://youtube.com/channel/UC15FjPfHK0F6TpUHJpCfINA?si=sPZ1eTUe7samELP3"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 text-[11px] font-mono text-[#ff3333]/80 hover:text-[#ff3333] transition-all bg-[#ff3333]/5 hover:bg-[#ff3333]/10 px-2.5 py-1 rounded border border-[#ff3333]/15 hover:border-[#ff3333]/30 hover:shadow-[0_0_8px_rgba(255,51,51,0.15)]"
+          style={{ textDecoration: 'none' }}
+          title="Наш YouTube-канал"
+        >
+          <IconYoutube />
+          <span>YouTube</span>
+        </a>
         <div className="relative w-72">
           <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
