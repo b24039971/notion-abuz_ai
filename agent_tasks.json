@@ -1,0 +1,206 @@
+{
+  "schema_version": 1,
+  "project": "notion-abuz_ai",
+  "task_source_priority": [
+    "agent_tasks.json",
+    "AGENTS.md",
+    "docs/jules_autonomous_loop.md",
+    "README.md",
+    "docs/api.md",
+    "docs/configuration.md"
+  ],
+  "risk_levels": [
+    "low",
+    "medium",
+    "high",
+    "critical"
+  ],
+  "merge_policy": {
+    "low": "auto_merge_after_ci",
+    "medium": "auto_merge_after_ci",
+    "high": "human_review_required",
+    "critical": "manual_only"
+  },
+  "replenishment_policy": {
+    "minimum_todo_tasks": 5,
+    "batch_size": 3,
+    "always_add_tasks": false,
+    "tasks_per_run": 1,
+    "allowed_risks_for_generated_tasks": [
+      "low",
+      "medium"
+    ],
+    "instruction": "When the todo queue is low, add small Claude/Claude Code compatibility, proxy, test, or documentation tasks. Prefer stabilization, Notion persona leakage prevention, and regression coverage over broad feature work. Never create tasks that require secrets, production account data, deployment changes, or workflow permission changes.",
+    "max_todo_tasks": 40
+  },
+  "autonomous_loop_policy": {
+    "operating_model": "docs/jules_autonomous_loop.md",
+    "selection_rule": "Choose the exact requested task_id when provided; otherwise choose the first todo task whose risk is low or medium.",
+    "anti_stall_rule": "Never ask the user what to do next while safe low or medium risk tasks can be selected or generated.",
+    "stabilization_first": true,
+    "max_pr_scope": "one task id per PR",
+    "failure_rule": "If CI fails because of the current change, fix it before opening or updating the PR. If CI fails for an unrelated reason, add a follow-up task and explain the limitation in the PR body."
+  },
+  "tasks": [
+    {
+      "id": "claude-code-notion-persona-leakage-regression",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Prevent Claude Code requests from leaking Notion persona behavior",
+      "description": "Add focused regression coverage and bridge fixes so Claude and Claude Code style coding requests keep external assistant instructions and are not answered as Notion workspace/page/document operations. The proxy should preserve coding-assistant behavior while still using Notion as the upstream transport.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "internal/proxy/anthropic_test.go",
+        "internal/proxy/openai.go",
+        "internal/proxy/openai_test.go",
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "docs/api.md",
+        "docs/claude-code-integration.md",
+        "docs/configuration.md",
+        "example.config.yaml",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover a Claude Code-like request with coding-assistant system instructions through the Anthropic Messages path.",
+        "Tests cover an OpenAI-compatible coding-assistant request that must not be transformed into a Notion workspace/page/document style instruction.",
+        "Existing Notion upstream transport behavior remains compatible.",
+        "No tests call live RDSH, Notion, Anthropic, OpenAI, Google, or GitHub APIs.",
+        "Docs explain that Notion persona leakage in Claude/Claude Code requests is a proxy compatibility bug.",
+        "If a live behavior check is needed, it is left to the RDSH Live Smoke workflow using the RDSH_API_KEY secret."
+      ]
+    },
+    {
+      "id": "openai-compatible-reasoning-effort-routing",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Route OpenAI-compatible reasoning_effort to configured model aliases",
+      "description": "Teach the OpenAI-compatible chat completions and responses bridges to accept reasoning_effort from clients such as OpenCode. If model_map contains an alias '<model>-<effort>', route the request to that alias before resolving the Notion internal model id. If no alias exists, keep the original model and do not fail the request.",
+      "allowed_paths": [
+        "internal/proxy/openai.go",
+        "internal/proxy/openai_test.go",
+        "internal/proxy/notion.go",
+        "internal/proxy/handler_models_test.go",
+        "docs/api.md",
+        "docs/configuration.md",
+        "example.config.yaml",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "OpenAI chat requests accept both reasoning_effort and reasoningEffort inputs without JSON decode errors.",
+        "OpenAI responses requests accept reasoning_effort when present.",
+        "model='opus-4.8' with reasoning_effort='high' routes through alias 'opus-4.8-high' when that alias exists in model_map.",
+        "If the alias is absent, behavior remains backward compatible.",
+        "Go tests cover alias routing and fallback behavior.",
+        "Docs explain how OpenCode variants can use reasoningEffort with RDSH."
+      ]
+    },
+    {
+      "id": "public-models-include-configured-aliases",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Expose configured friendly model aliases in the public models list",
+      "description": "Improve /v1/models so configured model_map aliases that are safe public names can appear alongside account-discovered models. This helps OpenAI-compatible clients discover manually configured aliases such as opus-4.8-high.",
+      "allowed_paths": [
+        "internal/proxy/handler.go",
+        "internal/proxy/handler_models_test.go",
+        "internal/proxy/notion.go",
+        "docs/api.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "/v1/models includes configured friendly aliases without duplicates.",
+        "Internal Notion model ids are not exposed when no friendly alias exists.",
+        "Existing account-discovered model behavior remains compatible.",
+        "Tests cover duplicate handling and fallback behavior."
+      ]
+    },
+    {
+      "id": "openai-compatible-streaming-regression-tests",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add regression tests for OpenAI-compatible streaming translation",
+      "description": "Add focused tests around OpenAI-compatible streaming event translation for text, tool calls, and reasoning summary events using local fixtures only.",
+      "allowed_paths": [
+        "internal/proxy/openai.go",
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover text delta streaming behavior.",
+        "Tests cover tool call delta behavior where existing code supports it.",
+        "Tests cover reasoning summary event translation from Anthropic thinking blocks.",
+        "No tests call external APIs."
+      ]
+    },
+    {
+      "id": "proxy-error-normalization-tests",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add regression coverage for OpenAI and Anthropic error normalization",
+      "description": "Add tests that verify unsupported options, malformed inputs, and upstream failures return stable error shapes for OpenAI-compatible and Anthropic-compatible clients.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "internal/proxy/openai.go",
+        "internal/proxy/openai_test.go",
+        "internal/proxy/anthropic_test.go",
+        "docs/api.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Malformed OpenAI-compatible requests return stable invalid_request_error style responses.",
+        "Malformed Anthropic-compatible requests return stable error responses.",
+        "Unsupported options are documented when intentionally ignored.",
+        "Tests use local httptest/fakes only."
+      ]
+    },
+    {
+      "id": "model-map-docs-for-client-aliases",
+      "status": "todo",
+      "area": "docs",
+      "risk": "low",
+      "title": "Document model_map aliases for OpenCode and OpenAI-compatible clients",
+      "description": "Document how to create friendly model aliases in model_map and how OpenAI-compatible clients can select them directly or via variants.",
+      "allowed_paths": [
+        "docs/api.md",
+        "docs/configuration.md",
+        "README.md",
+        "example.config.yaml",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Docs include an example for opus-4.8-high mapping to a Notion internal id.",
+        "Docs explain that clients may select aliases as model ids.",
+        "Docs warn not to commit real config.yaml or account data.",
+        "Example config remains secret-free."
+      ]
+    },
+    {
+      "id": "dashboard-model-alias-visibility",
+      "status": "todo",
+      "area": "dashboard",
+      "risk": "medium",
+      "title": "Improve dashboard visibility for configured model aliases",
+      "description": "Make the dashboard model/admin view clearly show configured friendly aliases separately from account-discovered internal models.",
+      "allowed_paths": [
+        "internal/proxy/handler.go",
+        "internal/proxy/handler_models_test.go",
+        "web/src/**",
+        "web/package.json",
+        "web/package-lock.json",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Dashboard or admin API distinguishes configured aliases from discovered models.",
+        "No account secrets or internal tokens are displayed.",
+        "Frontend build passes.",
+        "Backend tests cover the admin payload shape when changed."
+      ]
+    }
+  ]
+}
