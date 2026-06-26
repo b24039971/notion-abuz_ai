@@ -21,9 +21,9 @@ func (c *Client) msaCheckPassword(password, referer, correlationID string) (stri
 		cid = hex.EncodeToString(buf)
 	}
 	body, _ := json.Marshal(map[string]string{
-		"username":                c.main.Email,
-		"password":                password,
-		"checkpasswordflowtoken":  "",
+		"username":               c.main.Email,
+		"password":               password,
+		"checkpasswordflowtoken": "",
 	})
 	headers := map[string]string{
 		"Content-Type":      "application/json; charset=utf-8",
@@ -94,25 +94,25 @@ func (c *Client) handleMSALoginPage(html, currentURL string) (string, string, st
 	}
 
 	form := url.Values{
-		"ps":                  {"2"},
-		"PPFT":                {cfg.ppft},
-		"PPSX":                {"Passpo"},
-		"NewUser":             {"1"},
-		"FoundMSAs":           {""},
-		"fspost":              {"0"},
-		"i21":                 {"0"},
-		"CookieDisclosure":    {"0"},
-		"IsFidoSupported":     {"1"},
-		"isSignupPost":        {"0"},
+		"ps":                    {"2"},
+		"PPFT":                  {cfg.ppft},
+		"PPSX":                  {"Passpo"},
+		"NewUser":               {"1"},
+		"FoundMSAs":             {""},
+		"fspost":                {"0"},
+		"i21":                   {"0"},
+		"CookieDisclosure":      {"0"},
+		"IsFidoSupported":       {"1"},
+		"isSignupPost":          {"0"},
 		"isRecoveryAttemptPost": {"0"},
-		"i13":                 {"0"},
-		"login":               {c.main.Email},
-		"loginfmt":            {c.main.Email},
-		"type":                {"11"},
-		"LoginOptions":        {"3"},
-		"cpr":                 {"0"},
-		"passwd":              {c.main.Password},
-		"vanguardflowtoken":   {vft},
+		"i13":                   {"0"},
+		"login":                 {c.main.Email},
+		"loginfmt":              {c.main.Email},
+		"type":                  {"11"},
+		"LoginOptions":          {"3"},
+		"cpr":                   {"0"},
+		"passwd":                {c.main.Password},
+		"vanguardflowtoken":     {vft},
 	}
 	headers := map[string]string{
 		"Origin":  msaBase,

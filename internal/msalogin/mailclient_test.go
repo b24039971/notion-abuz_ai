@@ -18,9 +18,9 @@ import (
 // Mirrors fuckteam/outlook_mail/src/outlook_mail/__init__.py:_IMAP_DOMAINS.
 func TestSelectMailClientUsesIMAPForConsumerDomains(t *testing.T) {
 	cases := []struct {
-		email     string
-		wantIMAP  bool
-		whyDescr  string
+		email    string
+		wantIMAP bool
+		whyDescr string
 	}{
 		{"alice@hotmail.com", true, "hotmail FOCI tokens lack Mail.Read"},
 		{"bob@HOTMAIL.com", true, "domain check must be case-insensitive"},

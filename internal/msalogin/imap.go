@@ -536,4 +536,3 @@ func decodeIMAPBody(raw string) string {
 	raw = strings.ReplaceAll(raw, "=\n", "")
 	return raw
 }
-

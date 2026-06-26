@@ -219,18 +219,18 @@ func HandleAdminRegisterStart(deps *RegisterJobsDeps) http.HandlerFunc {
 		// Detach from the request context so cancelled HTTP clients don't
 		// kill the background run.
 		runCtx := context.Background()
-	go regjob.Run(runCtx, deps.Store, job.ID, prov, creds, regjob.RunOpts{
-		Concurrency: concurrency,
-		AccountsDir: deps.AccountsDir,
-		Proxy:       proxyURL,
-		OnSuccess: func(email string) {
-			deps.Pool.ReloadFromDir(deps.AccountsDir)
-			triggerPostRegisterRefresh(deps, email)
-		},
-	})
+		go regjob.Run(runCtx, deps.Store, job.ID, prov, creds, regjob.RunOpts{
+			Concurrency: concurrency,
+			AccountsDir: deps.AccountsDir,
+			Proxy:       proxyURL,
+			OnSuccess: func(email string) {
+				deps.Pool.ReloadFromDir(deps.AccountsDir)
+				triggerPostRegisterRefresh(deps, email)
+			},
+		})
 
-	resp := map[string]interface{}{
-		"job_id":      job.ID,
+		resp := map[string]interface{}{
+			"job_id":      job.ID,
 			"provider":    prov.ID(),
 			"total":       len(creds),
 			"concurrency": concurrency,

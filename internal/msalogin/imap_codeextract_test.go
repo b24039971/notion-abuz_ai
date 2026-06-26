@@ -44,7 +44,7 @@ func TestExtractMSSecurityCodeIgnoresOtherSixDigitNumbers(t *testing.T) {
 	body := strings.Join([]string{
 		"X-MS-Exchange-Organization-Network-Message-Id: ea00f2fb-4fa1-4476-9996-08dea3facfa0",
 		"Subject: Personal Microsoft account security code",
-		"X-Some-Trace: 989104",                   // looks like a code but isn't
+		"X-Some-Trace: 989104", // looks like a code but isn't
 		"",
 		"<html>...random tracking pixel id 123456...",
 		"",
@@ -73,10 +73,10 @@ func TestIsMSSecurityCodeMailMatchesAccountProtectionSender(t *testing.T) {
 		want       bool
 	}{
 		{"account-security-noreply@accountprotection.microsoft.com", "Personal Microsoft account security code", true},
-		{"random@noreply.microsoft.com", "Microsoft account security code", true},                // by subject
-		{"verify@chatgpt.openai.com", "你的 ChatGPT 代码为 055913", false},                              // wrong sender + wrong subject
-		{"openai@mandrillapp.com", "你的 OpenAI 代码为 532420", false},                                 // wrong sender + wrong subject
-		{"account-security-noreply@accountprotection.microsoft.com", "anything", true},          // sender suffices
+		{"random@noreply.microsoft.com", "Microsoft account security code", true},      // by subject
+		{"verify@chatgpt.openai.com", "你的 ChatGPT 代码为 055913", false},                  // wrong sender + wrong subject
+		{"openai@mandrillapp.com", "你的 OpenAI 代码为 532420", false},                      // wrong sender + wrong subject
+		{"account-security-noreply@accountprotection.microsoft.com", "anything", true}, // sender suffices
 	}
 	for _, tc := range cases {
 		got := isMSSecurityCodeMail(fetchedMessage{From: tc.from, Subject: tc.subj})

@@ -53,7 +53,7 @@ type Client struct {
 
 	// Cached space data populated by createSpace; falls back here when
 	// loadUserContent has not yet propagated the new workspace.
-	createdSpace      map[string]interface{}
+	createdSpace       map[string]interface{}
 	createdSpaceViewID string
 }
 

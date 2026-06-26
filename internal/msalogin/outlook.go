@@ -247,11 +247,11 @@ func isPermanentOAuthError(body []byte) bool {
 // graphMessagesResp models the relevant /me/messages payload.
 type graphMessagesResp struct {
 	Value []struct {
-		ID            string `json:"id"`
-		Subject       string `json:"subject"`
-		BodyPreview   string `json:"bodyPreview"`
-		ReceivedAt    string `json:"receivedDateTime"`
-		Body          struct {
+		ID          string `json:"id"`
+		Subject     string `json:"subject"`
+		BodyPreview string `json:"bodyPreview"`
+		ReceivedAt  string `json:"receivedDateTime"`
+		Body        struct {
 			Content     string `json:"content"`
 			ContentType string `json:"contentType"`
 		} `json:"body"`

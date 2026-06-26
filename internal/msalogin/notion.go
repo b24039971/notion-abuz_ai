@@ -63,9 +63,9 @@ func (c *Client) notionAPIHeaders() map[string]string {
 		version = c.clientVersion
 	}
 	headers := map[string]string{
-		"Origin":                       notionBase,
-		"Referer":                      notionBase + "/",
-		"x-notion-active-user-header":  cookies["notion_user_id"],
+		"Origin":                      notionBase,
+		"Referer":                     notionBase + "/",
+		"x-notion-active-user-header": cookies["notion_user_id"],
 	}
 	if version != "" {
 		headers["notion-client-version"] = version
@@ -383,7 +383,7 @@ func (c *Client) attachSpaceView(spaceID, viewID, userID string, headers map[str
 							"first_joined_space_time": now,
 							"joined":                  true,
 							"settings": map[string]interface{}{
-								"notify_email_digest":       true,
+								"notify_email_digest":      true,
 								"notify_home_digest_email": true,
 							},
 						},
@@ -546,9 +546,9 @@ func (c *Client) extractSession() (*NotionSession, error) {
 	}
 	var ud struct {
 		RecordMap struct {
-			NotionUser map[string]json.RawMessage `json:"notion_user"`
-			UserRoot   map[string]json.RawMessage `json:"user_root"`
-			Space      map[string]json.RawMessage `json:"space"`
+			NotionUser   map[string]json.RawMessage `json:"notion_user"`
+			UserRoot     map[string]json.RawMessage `json:"user_root"`
+			Space        map[string]json.RawMessage `json:"space"`
 			UserSettings map[string]json.RawMessage `json:"user_settings"`
 		} `json:"recordMap"`
 	}
