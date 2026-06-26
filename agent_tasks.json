@@ -99,7 +99,7 @@
     },
     {
       "id": "public-models-include-configured-aliases",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Expose configured friendly model aliases in the public models list",
@@ -200,6 +200,22 @@
         "No account secrets or internal tokens are displayed.",
         "Frontend build passes.",
         "Backend tests cover the admin payload shape when changed."
+      ]
+    },
+    {
+      "id": "add-handler-models-coverage-for-normalize-models",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test coverage for publicModelID normalization",
+      "description": "Add focused tests to verify that publicModelID normalizes model names properly and that buildPublicModels uses normalized names correctly.",
+      "allowed_paths": [
+        "internal/proxy/handler_models_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover publicModelID behavior.",
+        "Tests verify normalizeModelName interactions."
       ]
     }
   ]

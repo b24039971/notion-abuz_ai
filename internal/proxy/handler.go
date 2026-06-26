@@ -72,18 +72,37 @@ func HandlePublicModels(pool *AccountPool) http.HandlerFunc {
 func buildPublicModels(models []ModelEntry) []publicModel {
 	seen := make(map[string]bool, len(models))
 	items := make([]publicModel, 0, len(models))
+	snap := SnapshotModelMap()
+
 	for _, model := range models {
-		id := publicModelID(model)
-		if id == "" || seen[id] {
-			continue
+		trimmedID := strings.TrimSpace(model.ID)
+		if trimmedID != "" {
+			for alias, internalID := range snap {
+				if internalID == trimmedID {
+					if !seen[alias] {
+						seen[alias] = true
+						items = append(items, publicModel{
+							ID:      alias,
+							Object:  "model",
+							Created: publicModelCreatedAt,
+							OwnedBy: "notion-manager",
+						})
+					}
+				}
+			}
 		}
-		seen[id] = true
-		items = append(items, publicModel{
-			ID:      id,
-			Object:  "model",
-			Created: publicModelCreatedAt,
-			OwnedBy: "notion-manager",
-		})
+
+		// Fallback to publicModelID if no configured alias was found
+		id := publicModelID(model)
+		if id != "" && !seen[id] {
+			seen[id] = true
+			items = append(items, publicModel{
+				ID:      id,
+				Object:  "model",
+				Created: publicModelCreatedAt,
+				OwnedBy: "notion-manager",
+			})
+		}
 	}
 
 	sort.Slice(items, func(i, j int) bool {

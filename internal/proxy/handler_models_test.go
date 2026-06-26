@@ -8,6 +8,54 @@ import (
 	"testing"
 )
 
+func TestHandlePublicModels_IncludesConfiguredAliases(t *testing.T) {
+	original := SnapshotModelMap()
+	ReplaceModelMap(map[string]string{
+		"opus-4.6":      "avocado-froyo-medium",
+		"opus-4.8-high": "avocado-froyo-medium", // multiple aliases point to the same ID
+		"gpt-5.4":       "oval-kumquat-medium",
+		"claude-3-test": "test-internal-id",
+	})
+	t.Cleanup(func() {
+		ReplaceModelMap(original)
+	})
+
+	pool := NewAccountPool()
+	pool.accounts = []*Account{
+		{
+			Models: []ModelEntry{
+				{Name: "GPT 5.4", ID: "oval-kumquat-medium"},
+				{Name: "Opus 4.6", ID: "avocado-froyo-medium"},
+				{Name: "Unknown Internal", ID: "unknown-internal-id"},
+			},
+		},
+	}
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/v1/models", nil)
+	HandlePublicModels(pool).ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+
+	var resp publicModelResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+
+	gotIDs := make([]string, 0, len(resp.Data))
+	for _, item := range resp.Data {
+		gotIDs = append(gotIDs, item.ID)
+	}
+
+	// Should contain "gpt-5.4", "opus-4.6", "opus-4.8-high", and "unknown-internal"
+	wantIDs := []string{"gpt-5.4", "opus-4.6", "opus-4.8-high", "unknown-internal"}
+	if !reflect.DeepEqual(gotIDs, wantIDs) {
+		t.Fatalf("unexpected model ids: got %v want %v", gotIDs, wantIDs)
+	}
+}
+
 func TestHandlePublicModels_UsesPoolModelsAndNormalizesIDs(t *testing.T) {
 	original := SnapshotModelMap()
 	ReplaceModelMap(map[string]string{
