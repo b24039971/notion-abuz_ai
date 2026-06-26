@@ -129,7 +129,7 @@ jobs:
           EOF
           )
 
-          curl -fsS 'https://jules.googleapis.com/v1alpha/sessions' \
+          response="$(curl -fsS 'https://jules.googleapis.com/v1alpha/sessions' \
             -X POST \
             -H "Content-Type: application/json" \
             -H "X-Goog-Api-Key: ${JULES_API_KEY}" \
@@ -144,4 +144,8 @@ jobs:
                 },
                 "automationMode": "AUTO_CREATE_PR",
                 "title": "notion-manager proxy improvement"
-              }')"
+              }')")"
+
+          echo "$response" > /tmp/jules-response.json
+          echo "Jules API response summary:"
+          jq '{name, id, title, state, createTime, updateTime, webUrl, url}' /tmp/jules-response.json
