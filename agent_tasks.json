@@ -82,7 +82,6 @@
         "internal/proxy/openai.go",
         "internal/proxy/openai_test.go",
         "internal/proxy/notion.go",
-        "internal/proxy/handler_models_test.go",
         "docs/api.md",
         "docs/configuration.md",
         "example.config.yaml",
@@ -94,7 +93,8 @@
         "model='opus-4.8' with reasoning_effort='high' routes through alias 'opus-4.8-high' when that alias exists in model_map.",
         "If the alias is absent, behavior remains backward compatible.",
         "Go tests cover alias routing and fallback behavior.",
-        "Docs explain how OpenCode variants can use reasoningEffort with RDSH."
+        "Docs explain how OpenCode variants can use reasoningEffort with RDSH.",
+        "Do not change /v1/models behavior or handler_models_test.go; public model alias discovery is covered by the separate public-models-include-configured-aliases task."
       ]
     },
     {
