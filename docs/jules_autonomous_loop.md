@@ -30,6 +30,11 @@ Do not ask the user what to do next when a safe `todo` task exists.
 Ask for human review only when the change requires secrets, production access,
 deployment changes, workflow permission changes, or high/critical-risk work.
 
+For low/medium-risk tasks, do not ask the user to choose between implementation
+approaches. If multiple safe approaches exist, choose the smallest reversible
+change that satisfies the selected task's acceptance criteria. If unsure, add
+focused tests first and then implement the smallest passing fix.
+
 ## Product Goal
 
 The proxy should behave like a stable coding-assistant API for Claude and
@@ -102,6 +107,10 @@ Prefer improvements in this order:
 6. Error normalization and retry behavior.
 7. Dashboard visibility into runtime state.
 8. Documentation that prevents misconfiguration.
+
+For `claude-code-notion-persona-leakage-regression`, prefer a narrow
+coding-assistant detection helper plus a short proxy compatibility instruction.
+Do not preserve the full Claude Code system prompt in tool-heavy requests.
 
 ## Protected Files
 

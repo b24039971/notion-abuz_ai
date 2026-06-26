@@ -116,6 +116,10 @@ jobs:
 
           STRICT RULES:
           - Never ask the user what to do if safe todo work exists.
+          - Do not ask the user to choose between implementation approaches for low/medium-risk tasks.
+          - If multiple safe approaches exist, choose the smallest reversible change that satisfies the selected task's acceptance criteria.
+          - If unsure, write focused tests first, then implement the smallest passing fix.
+          - Ask for user input only when blocked by missing permissions, missing secrets, high/critical risk, or an unavoidable destructive action.
           - Keep PRs small and bounded: one task id per PR.
           - Do not modify secrets, account JSON, token files, generated logs, binaries, local config.yaml, or runtime data.
           - Do not modify .github/workflows/** unless the selected task explicitly allows workflow work.
@@ -126,6 +130,7 @@ jobs:
           - Prefer focused tests over broad refactors.
           - Preserve existing public API compatibility unless the task explicitly changes it.
           - Treat Notion persona leakage in Claude/Claude Code requests as a proxy compatibility bug.
+          - For task claude-code-notion-persona-leakage-regression, prefer a narrow coding-assistant detection helper plus a short proxy compatibility instruction. Do not preserve the full Claude Code system prompt in tool-heavy requests.
           EOF
           )
 

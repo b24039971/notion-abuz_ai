@@ -46,6 +46,11 @@ Default selection rule:
 
 If the todo queue is below `replenishment_policy.minimum_todo_tasks`, add a small batch of low/medium-risk tasks with concrete `allowed_paths` and `acceptance` criteria.
 
+Do not ask the user to choose between implementation approaches for low/medium
+tasks. If multiple safe approaches exist, choose the smallest reversible change
+that satisfies the selected task's acceptance criteria. If unsure, write focused
+tests first and then implement the smallest passing fix.
+
 Local helper scripts:
 
 ```bash
