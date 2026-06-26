@@ -31,6 +31,10 @@ scheduled `Jules Unattended Monitor` workflow handles that state by sending a
 standard autonomous continuation message. It also approves unexpected plan
 approval waits and can dispatch a new task when the loop is idle.
 
+The monitor runs every five minutes. In scheduled mode it waits at least
+15 minutes after the last Jules trigger before starting a replacement session,
+so a fast terminal failure does not leave the loop idle overnight.
+
 Set repository variable `JULES_LOOP_ENABLED=false` to stop both new Jules task
 dispatches and unattended monitor continuations. If the variable is absent or
 set to any other value, the loop is enabled.

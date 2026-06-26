@@ -2,7 +2,7 @@ name: 3. Jules Unattended Monitor
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
     inputs:
       lookback_hours:
@@ -21,7 +21,7 @@ on:
       idle_dispatch_minutes:
         description: "Minimum minutes since the last Jules trigger before idle dispatch"
         required: false
-        default: "90"
+        default: "15"
         type: string
 
 permissions:
