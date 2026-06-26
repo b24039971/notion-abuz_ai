@@ -1,28 +1,57 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
-    branches: [main]
+    branches: [master]
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
+  validate:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-go@v5
         with:
-          python-version: "3.11"
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
 
-      - name: Install dependencies
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Check Go formatting
         run: |
-          pip install pytest pytest-asyncio
-          pip install -r requirements.txt
+          test -z "$(gofmt -l .)"
 
-      - name: Validate agent task manifest
-        run: python scripts/validate_agent_tasks.py agent_tasks.json
+      - name: Build dashboard
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
 
-      - name: Run test suite
-        run: pytest
+      - name: Refresh embedded dashboard
+        run: |
+          rm -rf internal/web/dist
+          cp -r web/dist internal/web/dist
+
+      - name: Go vet
+        run: go vet ./...
+
+      - name: Go test
+        run: go test ./...
+
+      - name: Build binary
+        run: go build -ldflags="-s -w" -o notion-manager ./cmd/notion-manager
