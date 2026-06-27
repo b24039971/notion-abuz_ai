@@ -636,7 +636,7 @@
     },
     {
       "id": "proxy-config-env-overrides-coverage",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Expand test coverage for config environment variable overrides",
