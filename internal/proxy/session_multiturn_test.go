@@ -514,3 +514,66 @@ func TestClaudeCodeAgentLoop_FinalAnswerAvoidsNotionPersona(t *testing.T) {
 		t.Errorf("detectToolBridgeNoToolResponse incorrectly flagged a valid JSON final answer")
 	}
 }
+
+// TestClaudeCodeAgentLoop_ToolResultContinuationComplexMarkdown validates
+// that tool results containing complex markdown or extreme lengths are properly
+// formatted and truncated if needed, without breaking continuation.
+func TestClaudeCodeAgentLoop_ToolResultContinuationComplexMarkdown(t *testing.T) {
+	longMarkdown := "# Title\n\n## Subtitle\n\n```json\n{\"key\": \"value\"}\n```\n\n" + strings.Repeat("A long paragraph. ", 500)
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "Read the complex file."},
+		{Role: "assistant", Content: "", ToolCalls: []ToolCall{
+			{ID: "call_1", Type: "function", Function: ToolCallFunction{Name: "Read", Arguments: `{"file_path":"complex.md"}`}},
+		}},
+		{Role: "tool", Name: "Read", ToolCallID: "call_1", Content: longMarkdown},
+	}
+
+	followUp := buildSessionChainFollowUp(messages, "Read", "")
+	if len(followUp) != 1 {
+		t.Fatalf("expected 1 follow up")
+	}
+
+	content := followUp[0].Content
+
+	if !strings.Contains(content, "[Read]: # Title") {
+		t.Errorf("Expected markdown title to be present")
+	}
+	if !strings.Contains(content, "... (truncated)") {
+		t.Errorf("Expected long tool output to be truncated")
+	}
+	if len(content) > 5000 {
+		t.Errorf("Follow-up prompt should be constrained in size, got %d chars", len(content))
+	}
+}
+
+// TestClaudeCodeAgentLoop_ToolResultContinuationInterleaved tests handling of
+// interleaved text and tool calls within assistant messages.
+func TestClaudeCodeAgentLoop_ToolResultContinuationInterleaved(t *testing.T) {
+	messages := []ChatMessage{
+		{Role: "user", Content: "Do a bunch of stuff."},
+		{Role: "assistant", Content: "First, I'll search for the file.", ToolCalls: []ToolCall{
+			{ID: "call_1", Type: "function", Function: ToolCallFunction{Name: "Grep", Arguments: `{"pattern":"foo"}`}},
+		}},
+		{Role: "tool", Name: "Grep", ToolCallID: "call_1", Content: "found foo in bar.go"},
+		{Role: "assistant", Content: "Now I'll read it.", ToolCalls: []ToolCall{
+			{ID: "call_2", Type: "function", Function: ToolCallFunction{Name: "Read", Arguments: `{"file_path":"bar.go"}`}},
+		}},
+		{Role: "tool", Name: "Read", ToolCallID: "call_2", Content: "content of bar.go"},
+	}
+
+	followUp := buildSessionChainFollowUp(messages, "Grep, Read", "")
+	if len(followUp) != 1 {
+		t.Fatalf("expected 1 follow up")
+	}
+
+	content := followUp[0].Content
+
+	// Should only include the latest tool results after the last assistant message
+	if strings.Contains(content, "[Grep]: found foo in bar.go") {
+		t.Errorf("Follow-up should not contain earlier Grep tool result")
+	}
+	if !strings.Contains(content, "[Read]: content of bar.go") {
+		t.Errorf("Follow-up should contain the latest Read tool result")
+	}
+}

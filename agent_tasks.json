@@ -1046,7 +1046,7 @@
     },
     {
       "id": "claude-code-tool-result-continuation-edge-cases",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add edge case tests for tool result continuation",
@@ -1091,6 +1091,22 @@
       ],
       "acceptance": [
         "Additional tests are added to verify parseToolCallJSON behavior on missing quotes on keys in JSON.",
+        "Tests pass and verify safe fallback."
+      ]
+    },
+    {
+      "id": "proxy-tool-call-malformed-json-test-4",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for malformed JSON improper escapes",
+      "description": "Add more test coverage for malformed JSON strings in tool calls to ensure the proxy handles them gracefully without crashing, specifically focusing on improperly escaped characters.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Additional tests are added to verify parseToolCallJSON behavior on improperly escaped characters in JSON.",
         "Tests pass and verify safe fallback."
       ]
     }
