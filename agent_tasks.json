@@ -554,7 +554,7 @@
     },
     {
       "id": "proxy-tools-nested-object-handling-tests",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for nested object handling in tool parameters",

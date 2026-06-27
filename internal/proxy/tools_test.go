@@ -1,8 +1,112 @@
 package proxy
 
 import (
+	"encoding/json"
 	"testing"
 )
+
+func TestParseToolCalls_NestedObjects(t *testing.T) {
+	tests := []struct {
+		name     string
+		content  string
+		wantName string
+		wantArgs string
+		wantBool bool
+	}{
+		{
+			name: "xml format with nested object",
+			content: `<tool_call>
+{
+  "name": "deep_nested_tool",
+  "arguments": {"config": {"features": {"enable_x": true, "details": {"version": 1.2, "tags": ["a", "b"]}}}}
+}
+</tool_call>`,
+			wantName: "deep_nested_tool",
+			wantArgs: `{"config": {"features": {"enable_x": true, "details": {"version": 1.2, "tags": ["a", "b"]}}}}`,
+			wantBool: true,
+		},
+		{
+			name: "markdown fenced json with nested object",
+			content: "Some text before\n```json\n" +
+				`{"name": "complex_action", "arguments": {"user": {"profile": {"preferences": {"theme": "dark"}}}}}` +
+				"\n```",
+			wantName: "complex_action",
+			wantArgs: `{"user": {"profile": {"preferences": {"theme": "dark"}}}}`,
+			wantBool: true,
+		},
+		{
+			name:     "direct json format with nested object",
+			content:  `{"name": "direct_call", "arguments": {"data": {"nested": {"level3": {"level4": "value"}}}}}`,
+			wantName: "direct_call",
+			wantArgs: `{"data": {"nested": {"level3": {"level4": "value"}}}}`,
+			wantBool: true,
+		},
+		{
+			name:     "tool_call wrapper format with nested object",
+			content:  `{"tool_call": {"name": "wrapper_call", "arguments": {"root": {"child": {"grandchild": null}}}}}`,
+			wantName: "wrapper_call",
+			wantArgs: `{"root": {"child": {"grandchild": null}}}`,
+			wantBool: true,
+		},
+		{
+			name:     "multi-line json format with nested objects",
+			content:  `{"name": "call_1", "arguments": {"a": {"b": 1}}}` + "\n" + `{"name": "call_2", "arguments": {"x": {"y": {"z": true}}}}`,
+			wantName: "call_1",
+			wantArgs: `{"a": {"b": 1}}`,
+			wantBool: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			calls, _, hasCalls := parseToolCalls(tt.content)
+			if hasCalls != tt.wantBool {
+				t.Fatalf("parseToolCalls() hasCalls = %v, want %v", hasCalls, tt.wantBool)
+			}
+			if tt.wantBool {
+				if len(calls) == 0 {
+					t.Fatalf("expected at least 1 tool call, got %d", len(calls))
+				}
+				if calls[0].Function.Name != tt.wantName {
+					t.Errorf("expected name %q, got %q", tt.wantName, calls[0].Function.Name)
+				}
+
+				var gotArgs, wantArgs interface{}
+				if err := json.Unmarshal([]byte(calls[0].Function.Arguments), &gotArgs); err != nil {
+					t.Fatalf("failed to unmarshal got arguments: %v", err)
+				}
+				if err := json.Unmarshal([]byte(tt.wantArgs), &wantArgs); err != nil {
+					t.Fatalf("failed to unmarshal want arguments: %v", err)
+				}
+
+				gotBytes, _ := json.Marshal(gotArgs)
+				wantBytes, _ := json.Marshal(wantArgs)
+				if string(gotBytes) != string(wantBytes) {
+					t.Errorf("arguments mismatch.\ngot:  %s\nwant: %s", string(gotBytes), string(wantBytes))
+				}
+
+				if tt.name == "multi-line json format with nested objects" {
+					if len(calls) < 2 {
+						t.Fatalf("expected 2 tool calls, got %d", len(calls))
+					}
+					if calls[1].Function.Name != "call_2" {
+						t.Errorf("expected name %q, got %q", "call_2", calls[1].Function.Name)
+					}
+
+					var gotArgs2, wantArgs2 interface{}
+					_ = json.Unmarshal([]byte(calls[1].Function.Arguments), &gotArgs2)
+					_ = json.Unmarshal([]byte(`{"x": {"y": {"z": true}}}`), &wantArgs2)
+
+					gotBytes2, _ := json.Marshal(gotArgs2)
+					wantBytes2, _ := json.Marshal(wantArgs2)
+					if string(gotBytes2) != string(wantBytes2) {
+						t.Errorf("arguments mismatch for second call.\ngot:  %s\nwant: %s", string(gotBytes2), string(wantBytes2))
+					}
+				}
+			}
+		})
+	}
+}
 
 func TestIsCodingAssistantRequest(t *testing.T) {
 	tests := []struct {
