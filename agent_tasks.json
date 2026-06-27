@@ -182,7 +182,7 @@
     },
     {
       "id": "dashboard-model-alias-visibility",
-      "status": "todo",
+      "status": "done",
       "area": "dashboard",
       "risk": "medium",
       "title": "Improve dashboard visibility for configured model aliases",
@@ -283,6 +283,40 @@
       "acceptance": [
         "Tests verify the admin models payload shape.",
         "Tests ensure configured aliases are correctly marked in the response."
+      ]
+    },
+    {
+      "id": "dashboard-auth-tests",
+      "status": "todo",
+      "area": "dashboard",
+      "risk": "low",
+      "title": "Add dashboard authentication handler tests",
+      "description": "Add tests verifying that dashboard login endpoints accept correct passwords and reject incorrect ones.",
+      "allowed_paths": [
+        "internal/proxy/dashboard_test.go",
+        "internal/proxy/dashboard.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify login with correct password.",
+        "Tests verify login with incorrect password."
+      ]
+    },
+    {
+      "id": "config-parsing-tests",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add configuration parsing tests",
+      "description": "Add tests to verify that config.yaml files are parsed correctly and missing fields are handled properly.",
+      "allowed_paths": [
+        "internal/proxy/config_test.go",
+        "internal/proxy/config.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify parsing valid configuration.",
+        "Tests verify defaults are applied to missing fields."
       ]
     }
   ]
