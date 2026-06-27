@@ -278,3 +278,50 @@ func TestHandlePublicModels_UsesNormalizedNames(t *testing.T) {
 		t.Fatalf("unexpected model ids: got %v want %v", gotIDs, wantIDs)
 	}
 }
+
+func TestHandleAdminModels(t *testing.T) {
+	original := SnapshotModelMap()
+	ReplaceModelMap(map[string]string{
+		"opus-test-alias": "avocado-froyo-medium",
+	})
+	t.Cleanup(func() {
+		ReplaceModelMap(original)
+	})
+
+	pool := NewAccountPool()
+	pool.accounts = []*Account{
+		{
+			Models: []ModelEntry{
+				{Name: "GPT 5.4", ID: "oval-kumquat-medium"},
+				{Name: "Opus 4.6", ID: "avocado-froyo-medium"},
+			},
+		},
+	}
+
+	auth := NewDashboardAuth("", "test-salt") // empty password means no auth required
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/admin/models", nil)
+
+	HandleAdminModels(pool, auth).ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+
+	var resp struct {
+		ModelMap        map[string]string `json:"model_map"`
+		AvailableModels []ModelEntry      `json:"available_models"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+
+	if resp.ModelMap["opus-test-alias"] != "avocado-froyo-medium" {
+		t.Errorf("expected model_map to contain opus-test-alias -> avocado-froyo-medium, got %v", resp.ModelMap)
+	}
+
+	if len(resp.AvailableModels) != 2 {
+		t.Errorf("expected 2 available_models, got %d", len(resp.AvailableModels))
+	}
+}

@@ -6,6 +6,7 @@ import { fmt, formatTokens, getQuotaStatusByUsage, getQuotaPct, avatarColor, ava
 import { AccountMenu } from './components/AccountMenu'
 import { RegisterModal } from './components/RegisterModal'
 import { HistoryDrawer } from './components/HistoryDrawer'
+import { AdminModels } from './components/AdminModels'
 import { IconUserPlus, IconHistory } from './components/Icons'
 
 // --- Icons ---
@@ -961,6 +962,9 @@ export default function App() {
             </span>
           )}
         </div>
+
+        {/* Admin Models Configuration */}
+        <AdminModels />
 
         {/* API Settings */}
         {settings && (() => {
