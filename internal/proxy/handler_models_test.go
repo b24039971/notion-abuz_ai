@@ -324,4 +324,21 @@ func TestHandleAdminModels(t *testing.T) {
 	if len(resp.AvailableModels) != 2 {
 		t.Errorf("expected 2 available_models, got %d", len(resp.AvailableModels))
 	}
+
+	foundOpus := false
+	foundGPT := false
+	for _, m := range resp.AvailableModels {
+		if m.ID == "avocado-froyo-medium" && m.Name == "Opus 4.6" {
+			foundOpus = true
+		}
+		if m.ID == "oval-kumquat-medium" && m.Name == "GPT 5.4" {
+			foundGPT = true
+		}
+	}
+	if !foundOpus {
+		t.Errorf("expected available_models to contain Opus 4.6 (avocado-froyo-medium)")
+	}
+	if !foundGPT {
+		t.Errorf("expected available_models to contain GPT 5.4 (oval-kumquat-medium)")
+	}
 }

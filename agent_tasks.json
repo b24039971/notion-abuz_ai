@@ -271,7 +271,7 @@
     },
     {
       "id": "dashboard-model-alias-visibility-tests",
-      "status": "todo",
+      "status": "done",
       "area": "dashboard",
       "risk": "low",
       "title": "Add tests for dashboard model alias visibility payload shape",
