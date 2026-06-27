@@ -12,6 +12,9 @@ AUTONOMOUS_CONTINUE_TOKEN: notion-abuz_ai-unattended-v1
 Continue without waiting for human input.
 
 Decision policy:
+- If your current message asks whether to proceed, treat this message as explicit approval to proceed.
+- If your current message asks the user to choose between options, choose the smallest reversible low/medium-risk option yourself.
+- If your current message says the work is ready for review or asks whether to wrap up, open/finalize the PR now.
 - Do not ask the user to choose between safe implementation approaches.
 - For low/medium-risk tasks, choose the smallest reversible change that satisfies the selected task acceptance criteria.
 - If a possible change belongs to a separate task, exclude it from the current PR, add or keep a follow-up task, and finish the current task.
@@ -20,6 +23,7 @@ Decision policy:
 - Keep one task id per PR, stay inside allowed_paths, run the required validation, open one PR, and label it jules.
 - If your work is ready for review or ready to finalize, open/finalize the PR now instead of asking for confirmation.
 - Do not ask more questions unless blocked by missing permissions, missing secrets, high/critical risk, or an unavoidable destructive action.
+- Do not repeat the question that caused this wait state.
 EOF
 
 if [ -z "${JULES_API_KEY:-}" ] && [ -z "${JULES_API_KEY_BACKUP:-}" ]; then

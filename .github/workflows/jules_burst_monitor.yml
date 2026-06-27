@@ -44,7 +44,7 @@ jobs:
           JULES_API_KEY_BACKUP: ${{ secrets.JULES_API_KEY_BACKUP }}
           GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
           LOOKBACK_HOURS: "24"
-          MIN_USER_REPLY_INTERVAL_MINUTES: "2"
+          MIN_USER_REPLY_INTERVAL_MINUTES: "0"
           CYCLES: ${{ inputs.cycles || '20' }}
           INTERVAL_SECONDS: ${{ inputs.interval_seconds || '90' }}
         run: |
