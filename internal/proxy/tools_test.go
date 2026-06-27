@@ -422,6 +422,26 @@ func TestParseToolCallJSON_WrapperFormats(t *testing.T) {
 			wantName: "",
 			wantArgs: `{}`,
 		},
+		{
+			name:    "malformed json - missing quotes on keys",
+			jsonStr: `{name: "test_missing_quotes", arguments: {}}`,
+			wantNil: true,
+		},
+		{
+			name:    "malformed json - improperly escaped character",
+			jsonStr: `{"name": "test_escape", "arguments": {"path": "C:\Program Files"}}`,
+			wantNil: true,
+		},
+		{
+			name:    "malformed json - wrapper missing quotes on keys",
+			jsonStr: `{tool_call: {"name": "test", "arguments": {}}}`,
+			wantNil: true,
+		},
+		{
+			name:    "malformed json - wrapper improperly escaped character",
+			jsonStr: `{"tool_call": {"name": "test", "arguments": {"text": "hello \x00 world"}}}`,
+			wantNil: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

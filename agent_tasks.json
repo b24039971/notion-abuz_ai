@@ -45,7 +45,7 @@
   "tasks": [
     {
       "id": "claude-code-tool-call-malformed-json-test",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test for malformed JSON in Claude Code tool calls",
@@ -1012,6 +1012,22 @@
       "acceptance": [
         "Tests cover extremely long tool outputs without crashing or loss.",
         "Tests verify multi-turn multi-tool call interactions without losing continuation."
+      ]
+    },
+    {
+      "id": "proxy-tool-call-malformed-json-test-2",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add additional malformed JSON tests for tool calls",
+      "description": "Add more test coverage for malformed JSON strings in tool calls to ensure the proxy handles them gracefully without crashing.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Additional tests are added to verify parseToolCallJSON behavior on edge cases of malformed JSON.",
+        "Tests pass and verify safe fallback."
       ]
     }
   ]
