@@ -45,7 +45,7 @@
   "tasks": [
     {
       "id": "proxy-chat-stream-handleframe-invalid-content-block-stop",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add chat stream error handling test for content_block_stop",
@@ -1108,6 +1108,22 @@
       "acceptance": [
         "Additional tests are added to verify parseToolCallJSON behavior on improperly escaped characters in JSON.",
         "Tests pass and verify safe fallback."
+      ]
+    },
+    {
+      "id": "proxy-chat-stream-handleframe-invalid-message-delta",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add chat stream error handling test for message_delta",
+      "description": "Ensure that if HandleFrame receives invalid JSON in message_delta in stream transcoders, it bubbles up the error correctly.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover stream transcoders with invalid JSON payload for message_delta.",
+        "Transcoders return error instead of panicking."
       ]
     }
   ]
