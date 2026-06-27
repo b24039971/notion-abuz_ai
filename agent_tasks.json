@@ -220,7 +220,7 @@
     },
     {
       "id": "proxy-timeout-handling-tests",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test coverage for proxy timeout scenarios",
@@ -317,6 +317,56 @@
       "acceptance": [
         "Tests verify parsing valid configuration.",
         "Tests verify defaults are applied to missing fields."
+      ]
+    },
+    {
+      "id": "proxy-tool-call-streaming-tests",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add regression tests for streaming tool-call events",
+      "description": "Add tests to ensure Anthropic and OpenAI compatible proxy streaming handles tool call chunks accurately without splitting JSON keys.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "internal/proxy/anthropic_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify tool call parameter streaming chunks.",
+        "Tests use local fixtures only."
+      ]
+    },
+    {
+      "id": "proxy-streaming-error-handling-tests",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for streaming error handling",
+      "description": "Add focused tests verifying that the stream transcoder gracefully handles partial or broken JSON frames.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover truncated stream frames.",
+        "Tests cover invalid JSON in event data."
+      ]
+    },
+    {
+      "id": "proxy-model-fallback-docs",
+      "status": "todo",
+      "area": "docs",
+      "risk": "low",
+      "title": "Document model map fallback behavior",
+      "description": "Add missing documentation describing how model mapping falls back to the original model name if no alias matches.",
+      "allowed_paths": [
+        "docs/configuration.md",
+        "docs/api.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Docs explain fallback behavior when an alias is missing.",
+        "Example configuration reflects fallback logic."
       ]
     }
   ]
