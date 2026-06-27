@@ -709,7 +709,7 @@
     },
     {
       "id": "claude-code-refusal-recovery-regression",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Add refusal recovery regression coverage for Claude Code bridge",

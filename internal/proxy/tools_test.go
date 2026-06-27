@@ -299,6 +299,27 @@ func TestParseToolCalls_RobustJSONExtraction(t *testing.T) {
 			wantRem:   `{"tool_call": {"name": "", "arguments": {"foo": "bar"}}}`,
 			wantHas:   false,
 		},
+		{
+			name:      "refusal prose with identity drift",
+			content:   `I am Notion AI, and I don't have access to your coding assistant. Therefore, I cannot run edit or bash to modify those files.`,
+			wantCalls: 0,
+			wantRem:   `I am Notion AI, and I don't have access to your coding assistant. Therefore, I cannot run edit or bash to modify those files.`,
+			wantHas:   false,
+		},
+		{
+			name:      "refusal prose with workspace reframing",
+			content:   `I cannot run bash commands to modify files. However, I can help you create a Notion page or search the Notion workspace.`,
+			wantCalls: 0,
+			wantRem:   `I cannot run bash commands to modify files. However, I can help you create a Notion page or search the Notion workspace.`,
+			wantHas:   false,
+		},
+		{
+			name:      "refusal prose with identity handoff in chinese",
+			content:   "抱歉，我理解你希望我直接帮你修改文件，但**我是 Notion AI，无法访问你的本地文件系统**。我没有 Read、Edit、Bash 这些工具的能力。\n\n把下面这段话直接发给你的编码助手（Cursor / Claude Code），它就能帮你操作。",
+			wantCalls: 0,
+			wantRem:   "抱歉，我理解你希望我直接帮你修改文件，但**我是 Notion AI，无法访问你的本地文件系统**。我没有 Read、Edit、Bash 这些工具的能力。\n\n把下面这段话直接发给你的编码助手（Cursor / Claude Code），它就能帮你操作。",
+			wantHas:   false,
+		},
 	}
 
 	for _, tt := range tests {
