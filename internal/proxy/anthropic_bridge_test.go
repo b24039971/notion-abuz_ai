@@ -152,3 +152,41 @@ func TestDetectToolBridgeNoToolResponse_DoesNotMatchNormalAnswer(t *testing.T) {
 		t.Fatalf("normal answer should not be classified as no-tool identity drift")
 	}
 }
+
+func TestClaudeCodeAgentLoop_PreservesCodingIntent(t *testing.T) {
+	// A simulated Claude Code transcript with CLAUDE.md instructions,
+	// inline command-name tags, and system-reminder blocks.
+	messages := []ChatMessage{
+		{Role: "system", Content: "You are Claude Code.\nRead CLAUDE.md for rules."},
+		{Role: "user", Content: "I need you to build a new agentic loop matrix. <system-reminder>DO NOT USE NOTION AI</system-reminder>\nRun <command-name>npm test</command-name> and verify <file>test.js</file>."},
+	}
+
+	isAssistant := isCodingAssistantRequest(messages)
+	if !isAssistant {
+		t.Fatalf("expected isCodingAssistantRequest to be true for this transcript")
+	}
+
+	sanitized := sanitizeForBridge(messages)
+
+	// Should have replaced the first message with the bridge system prompt
+	if len(sanitized) != 2 || sanitized[0].Role != "system" {
+		t.Fatalf("expected 2 messages starting with system bridge, got %v", sanitized)
+	}
+
+	if strings.Contains(sanitized[0].Content, "You are Claude Code") {
+		t.Fatalf("expected Claude Code system prompt to be dropped, got: %s", sanitized[0].Content)
+	}
+	if !strings.Contains(sanitized[0].Content, "output the function call as JSON") {
+		t.Fatalf("expected bridge system prompt, got: %s", sanitized[0].Content)
+	}
+
+	userMsg := sanitized[1].Content
+	// <system-reminder> should be fully stripped
+	if strings.Contains(userMsg, "DO NOT USE NOTION AI") {
+		t.Fatalf("expected system-reminder block to be stripped, got: %s", userMsg)
+	}
+	// Inline tags <command-name> and <file> should have their tags stripped but content kept
+	if !strings.Contains(userMsg, "Run npm test") || !strings.Contains(userMsg, "verify test.js") {
+		t.Fatalf("expected coding intent to be preserved, got: %s", userMsg)
+	}
+}

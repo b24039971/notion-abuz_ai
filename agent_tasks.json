@@ -255,7 +255,7 @@
     },
     {
       "id": "claude-code-agentic-loop-regression-matrix",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Build a global Claude Code agent-loop regression matrix",

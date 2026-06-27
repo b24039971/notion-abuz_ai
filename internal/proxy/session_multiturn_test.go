@@ -327,3 +327,45 @@ func TestInjectToolsSessionVsLegacy(t *testing.T) {
 		t.Error("legacy path: expected original query in collapsed message")
 	}
 }
+
+// TestClaudeCodeAgentLoop_MultiTurnReadEditTest verifies that a multi-turn
+// agentic loop simulating Read -> Edit -> Test tools properly generates session follow-ups
+// without including Notion persona leakage or losing intent.
+func TestClaudeCodeAgentLoop_MultiTurnReadEditTest(t *testing.T) {
+	messages := []ChatMessage{
+		{Role: "user", Content: "Update the tests and verify."},
+		{Role: "assistant", Content: "", ToolCalls: []ToolCall{
+			{ID: "call_1", Type: "function", Function: ToolCallFunction{Name: "Read", Arguments: `{"file_path":"test.go"}`}},
+		}},
+		{Role: "tool", Name: "Read", ToolCallID: "call_1", Content: "func TestA() {}"},
+		{Role: "assistant", Content: "", ToolCalls: []ToolCall{
+			{ID: "call_2", Type: "function", Function: ToolCallFunction{Name: "Edit", Arguments: `{"file_path":"test.go","content":"func TestA() { } func TestB() { }"}`}},
+		}},
+		{Role: "tool", Name: "Edit", ToolCallID: "call_2", Content: "File updated"},
+		{Role: "assistant", Content: "", ToolCalls: []ToolCall{
+			{ID: "call_3", Type: "function", Function: ToolCallFunction{Name: "Bash", Arguments: `{"command":"go test ."}`}},
+		}},
+		{Role: "tool", Name: "Bash", ToolCallID: "call_3", Content: "PASS\nok  test.go\t0.001s"},
+	}
+
+	followUp := buildSessionChainFollowUp(messages, "Bash, Read, Edit", "")
+
+	if len(followUp) != 1 {
+		t.Fatalf("expected 1 follow-up message, got %d", len(followUp))
+	}
+	content := followUp[0].Content
+
+	// Verify that only the latest tool result is included in the follow-up.
+	if strings.Contains(content, "[Read]: func TestA()") {
+		t.Errorf("follow-up should not contain earlier Read tool result")
+	}
+	if strings.Contains(content, "[Edit]: File updated") {
+		t.Errorf("follow-up should not contain earlier Edit tool result")
+	}
+	if !strings.Contains(content, "[Bash]: PASS") {
+		t.Errorf("follow-up should contain the latest Bash tool result, got: %s", content)
+	}
+	if strings.Contains(content, "Notion AI") {
+		t.Errorf("follow-up should not contain Notion persona leakage")
+	}
+}

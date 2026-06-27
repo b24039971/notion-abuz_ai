@@ -83,3 +83,36 @@ func TestInjectCodingAssistantInstruction(t *testing.T) {
 		t.Errorf("expected original message to be preserved")
 	}
 }
+
+func TestStripSystemReminders_PreservesCodingIntent(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "preserves command name intent",
+			input: "Run <command-name>/test</command-name> to verify.",
+			want:  "Run /test to verify.",
+		},
+		{
+			name:  "preserves file intent",
+			input: "Look at <file>src/main.go</file>",
+			want:  "Look at src/main.go",
+		},
+		{
+			name:  "strips blocks but keeps inline",
+			input: "Here is a <local-command-caveat>DO NOT respond</local-command-caveat> rule. Use <package>gin</package>.",
+			want:  "Here is a  rule. Use gin.",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := stripSystemReminders(tt.input)
+			if got != tt.want {
+				t.Errorf("stripSystemReminders() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}

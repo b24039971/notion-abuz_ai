@@ -384,8 +384,8 @@ func sanitizeForBridge(messages []ChatMessage) []ChatMessage {
 // - <local-command-caveat>: contains "DO NOT respond" which kills the response
 // - Inline tags like <command-name>/clear</command-name>
 var (
-	blockTagRegex  = regexp.MustCompile(`(?s)<(?:system-reminder|local-command-caveat)>.*?</(?:system-reminder|local-command-caveat)>`)
-	inlineTagRegex = regexp.MustCompile(`<[a-z][-a-z]*>[^<]*</[a-z][-a-z]*>`)
+	blockTagRegex  = regexp.MustCompile(`(?s)<(?:system-reminder|local-command-caveat|available-deferred-tools)>.*?</(?:system-reminder|local-command-caveat|available-deferred-tools)>`)
+	inlineTagRegex = regexp.MustCompile(`</?[a-z][-a-z]*>`)
 )
 
 func stripSystemReminders(content string) string {
