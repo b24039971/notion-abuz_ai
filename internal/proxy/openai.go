@@ -1089,6 +1089,19 @@ func parseAnthropicSSEFrame(raw string) (anthropicSSEFrame, error) {
 	var frame anthropicSSEFrame
 	lines := strings.Split(raw, "\n")
 	var dataLines []string
+
+	isEmptyOrCommentOnly := true
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" && !strings.HasPrefix(trimmed, ":") {
+			isEmptyOrCommentOnly = false
+			break
+		}
+	}
+	if isEmptyOrCommentOnly {
+		return anthropicSSEFrame{Event: "ping"}, nil
+	}
+
 	for _, line := range lines {
 		switch {
 		case strings.HasPrefix(line, "event: "):
@@ -1097,6 +1110,7 @@ func parseAnthropicSSEFrame(raw string) (anthropicSSEFrame, error) {
 			dataLines = append(dataLines, strings.TrimPrefix(line, "data: "))
 		}
 	}
+
 	if frame.Event == "" {
 		return frame, fmt.Errorf("missing event in frame %q", raw)
 	}

@@ -648,3 +648,93 @@ func TestHandleOpenAIChatCompletions_UnsupportedToolType(t *testing.T) {
 		t.Errorf("Expected error message to contain 'unsupported tool type', got %s", resp.Error.Message)
 	}
 }
+
+func TestParseAnthropicSSEFrame_Heartbeat(t *testing.T) {
+	inputs := []struct {
+		name     string
+		raw      string
+		expected string
+		isErr    bool
+	}{
+		{
+			name:     "comment only",
+			raw:      ": keep-alive",
+			expected: "ping",
+			isErr:    false,
+		},
+		{
+			name:     "empty lines",
+			raw:      "   \n  \n",
+			expected: "ping",
+			isErr:    false,
+		},
+		{
+			name:     "empty string",
+			raw:      "",
+			expected: "ping",
+			isErr:    false,
+		},
+		{
+			name:     "actual event",
+			raw:      "event: message_start\ndata: {}",
+			expected: "message_start",
+			isErr:    false,
+		},
+		{
+			name:     "invalid format without event",
+			raw:      "data: {}",
+			expected: "",
+			isErr:    true,
+		},
+	}
+
+	for _, tt := range inputs {
+		t.Run(tt.name, func(t *testing.T) {
+			frame, err := parseAnthropicSSEFrame(tt.raw)
+			if tt.isErr {
+				if err == nil {
+					t.Errorf("expected error for %q, got nil", tt.raw)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("unexpected error for %q: %v", tt.raw, err)
+				}
+				if frame.Event != tt.expected {
+					t.Errorf("expected event %q, got %q", tt.expected, frame.Event)
+				}
+			}
+		})
+	}
+}
+
+func TestOpenAIChatStreamTranscoder_Heartbeat(t *testing.T) {
+	rr := httptest.NewRecorder()
+	transcoder := newOpenAIChatStreamTranscoder(rr, rr, "chat_heartbeat", "gpt-5", 123, true)
+
+	// Ensure that ping frames don't crash the transcoder and don't emit garbage chunks
+	pingFrame := anthropicSSEFrame{Event: "ping", Data: nil}
+	if err := transcoder.HandleFrame(pingFrame); err != nil {
+		t.Fatalf("unexpected error on ping frame: %v", err)
+	}
+
+	body := rr.Body.String()
+	if body != "" {
+		t.Fatalf("expected empty body for ping frame, got: %s", body)
+	}
+}
+
+func TestOpenAIResponsesStreamTranscoder_Heartbeat(t *testing.T) {
+	rr := httptest.NewRecorder()
+	transcoder := newOpenAIResponsesStreamTranscoder(rr, rr, "resp_heartbeat", "gpt-5", 123)
+
+	// Ensure that ping frames don't crash the transcoder and don't emit garbage chunks
+	pingFrame := anthropicSSEFrame{Event: "ping", Data: nil}
+	if err := transcoder.HandleFrame(pingFrame); err != nil {
+		t.Fatalf("unexpected error on ping frame: %v", err)
+	}
+
+	body := rr.Body.String()
+	if body != "" {
+		t.Fatalf("expected empty body for ping frame, got: %s", body)
+	}
+}

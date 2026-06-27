@@ -44,6 +44,38 @@
   },
   "tasks": [
     {
+      "id": "claude-code-tool-call-malformed-json-test",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for malformed JSON in Claude Code tool calls",
+      "description": "Add tests to parseToolCallJSON to verify it can safely recover or ignore tool calls with improperly escaped characters or missing quotes, preserving bridge stability.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify tool call parser does not crash on malformed JSON.",
+        "Malformed tool calls fall back to safe empty arguments or are skipped."
+      ]
+    },
+    {
+      "id": "proxy-chat-stream-error-handling-coverage",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add chat stream error handling tests",
+      "description": "Ensure that if HandleFrame fails to unmarshal actual content delta blocks in openAIChatStreamTranscoder, it bubbles up the error correctly instead of panicking.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover chat stream transcoder with invalid content block data.",
+        "Transcoder returns error instead of panicking."
+      ]
+    },
+    {
       "id": "claude-code-nested-tool-call-wrapper-format",
       "status": "done",
       "area": "proxy",
@@ -917,7 +949,7 @@
     },
     {
       "id": "proxy-response-streaming-heartbeat-tests",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add streaming heartbeat tests",
