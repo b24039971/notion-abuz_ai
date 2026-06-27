@@ -92,10 +92,17 @@ jobs:
           missing secrets, high/critical risk, or an unavoidable destructive action.
 
           PRIMARY OBJECTIVE:
-          Improve Claude and Claude Code compatibility through the RDSH/notion-abuz_ai proxy.
-          The proxy must behave like a coding assistant API, not like the Notion product UI.
-          Prioritize fixes that prevent Notion persona leakage, Notion workspace/page/document refusals,
-          and model drift where Claude-style coding requests are answered as if the user is inside Notion.
+          Make the original Claude Code promise reliable: Claude Code must work
+          as an autonomous coding agent through the RDSH/notion-abuz_ai proxy,
+          using pooled Notion AI accounts as the upstream capacity layer.
+          The current investigation target is the three-layer Claude Code
+          compatibility bridge and its session-based multi-turn handling, not
+          dashboard, registration, or generic account-pool work unless a
+          concrete Claude Code bridge failure points there.
+          Prioritize fixes that prevent Notion persona leakage, tool-call
+          refusals, JSON tool-call mode loss, tool-result continuation loss,
+          final-answer identity drift, and Claude-style coding requests answered
+          as if the user is inside Notion.
 
           PROJECT CONTEXT:
           - Language/runtime: Go backend, module "notion-manager".
@@ -103,8 +110,9 @@ jobs:
           - Main binary: ./cmd/notion-manager.
           - Core backend code: internal/proxy, internal/regjob, internal/msalogin, internal/netutil, internal/web.
           - Dashboard static files are embedded through internal/web/dist.
-          - Public API compatibility matters: Anthropic Messages API and OpenAI-compatible endpoints.
+          - Public API compatibility matters, with Anthropic Messages API / Claude Code as the primary target.
           - The project manages Notion AI account sessions, quotas, dashboard, reverse proxy, and bulk Microsoft SSO registration.
+          - Assume account pool and base Notion transport work unless a test, CI log, or live smoke result proves otherwise.
 
           TASK LOOP:
           1. Read AGENTS.md, docs/jules_autonomous_loop.md, README.md, docs/api.md, docs/configuration.md, and agent_tasks.json.
@@ -129,8 +137,11 @@ jobs:
           implement it now. Otherwise create a follow-up task and finish this PR.
           For Claude Code compatibility, prefer behavior-level regression tasks:
           transcript fixtures, tool-result continuation, session recovery,
-          Notion persona leakage signals, and lost coding intent from CLAUDE.md,
-          hooks, slash commands, MCP, or subagent-style prompts.
+          JSON tool-call mode, final-answer mode, Notion persona leakage
+          signals, and lost coding intent from CLAUDE.md, hooks, slash commands,
+          MCP, or subagent-style prompts. Treat OpenAI/OpenCode, dashboard,
+          registration, generic config, and workflow work as secondary unless it
+          directly supports a reproduced Claude Code bridge failure.
 
           VALIDATION COMMANDS:
           - python3 scripts/validate_agent_tasks.py agent_tasks.json
