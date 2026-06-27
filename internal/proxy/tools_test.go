@@ -448,6 +448,11 @@ func TestParseToolCallJSON_WrapperFormats(t *testing.T) {
 			wantNil: true,
 		},
 		{
+			name:    "malformed json - missing quotes on arguments inner keys",
+			jsonStr: `{"name": "test", "arguments": {path: "main.go"}}`,
+			wantNil: true,
+		},
+		{
 			name:    "malformed json - improperly escaped character",
 			jsonStr: `{"name": "test_escape", "arguments": {"path": "C:\Program Files"}}`,
 			wantNil: true,
@@ -455,6 +460,16 @@ func TestParseToolCallJSON_WrapperFormats(t *testing.T) {
 		{
 			name:    "malformed json - wrapper missing quotes on keys",
 			jsonStr: `{tool_call: {"name": "test", "arguments": {}}}`,
+			wantNil: true,
+		},
+		{
+			name:    "malformed json - wrapper missing quotes on inner keys",
+			jsonStr: `{"tool_call": {name: "test", arguments: {}}}`,
+			wantNil: true,
+		},
+		{
+			name:    "malformed json - wrapper missing quotes on arguments inner keys",
+			jsonStr: `{"tool_call": {"name": "test", "arguments": {path: "main.go"}}}`,
 			wantNil: true,
 		},
 		{
