@@ -460,3 +460,47 @@ func TestOpenAIErrorNormalization_UnsupportedMessageRole(t *testing.T) {
 		t.Errorf("Expected unsupported message role error, got: %v", err)
 	}
 }
+
+func TestOpenAIChatStreamTranscoder_ToolCallChunks(t *testing.T) {
+	rr := httptest.NewRecorder()
+	transcoder := newOpenAIChatStreamTranscoder(rr, rr, "chatcmpl_test", "gpt-5.4", 123, true)
+	frames := []anthropicSSEFrame{
+		{Event: "message_start", Data: json.RawMessage(`{"message":{"usage":{"input_tokens":11}}}`)},
+		{Event: "content_block_start", Data: json.RawMessage(`{"index":0,"content_block":{"type":"tool_use","id":"call_1","name":"Read","input":{}}}`)},
+		{Event: "content_block_delta", Data: json.RawMessage(`{"index":0,"delta":{"type":"input_json_delta","partial_json":"{\"f"}}`)},
+		{Event: "content_block_delta", Data: json.RawMessage(`{"index":0,"delta":{"type":"input_json_delta","partial_json":"ile\":\"test.go\"}"}}`)},
+		{Event: "message_delta", Data: json.RawMessage(`{"delta":{"stop_reason":"tool_use"},"usage":{"output_tokens":7}}`)},
+		{Event: "message_stop", Data: json.RawMessage(`{"type":"message_stop"}`)},
+	}
+	for _, frame := range frames {
+		if err := transcoder.HandleFrame(frame); err != nil {
+			t.Fatalf("HandleFrame(%s) error = %v", frame.Event, err)
+		}
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "{\\\"f") || !strings.Contains(body, "ile\\\":\\\"test.go\\\"}") {
+		t.Fatalf("body missing split JSON chunks: %s", body)
+	}
+}
+
+func TestOpenAIResponsesStreamTranscoder_ToolCallChunks(t *testing.T) {
+	rr := httptest.NewRecorder()
+	transcoder := newOpenAIResponsesStreamTranscoder(rr, rr, "resp_test", "gpt-5.4", 456)
+	frames := []anthropicSSEFrame{
+		{Event: "message_start", Data: json.RawMessage(`{"message":{"usage":{"input_tokens":9}}}`)},
+		{Event: "content_block_start", Data: json.RawMessage(`{"index":0,"content_block":{"type":"tool_use","id":"call_1","name":"Read","input":{}}}`)},
+		{Event: "content_block_delta", Data: json.RawMessage(`{"index":0,"delta":{"type":"input_json_delta","partial_json":"{\"f"}}`)},
+		{Event: "content_block_delta", Data: json.RawMessage(`{"index":0,"delta":{"type":"input_json_delta","partial_json":"ile\":\"test.go\"}"}}`)},
+		{Event: "content_block_stop", Data: json.RawMessage(`{"index":0}`)},
+		{Event: "message_delta", Data: json.RawMessage(`{"delta":{"stop_reason":"tool_use"},"usage":{"output_tokens":6}}`)},
+	}
+	for _, frame := range frames {
+		if err := transcoder.HandleFrame(frame); err != nil {
+			t.Fatalf("HandleFrame(%s) error = %v", frame.Event, err)
+		}
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "{\\\"f") || !strings.Contains(body, "ile\\\":\\\"test.go\\\"}") {
+		t.Fatalf("body missing split JSON chunks: %s", body)
+	}
+}

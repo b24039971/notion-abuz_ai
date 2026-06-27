@@ -321,7 +321,7 @@
     },
     {
       "id": "proxy-tool-call-streaming-tests",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add regression tests for streaming tool-call events",
