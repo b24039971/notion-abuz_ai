@@ -862,7 +862,8 @@
       "acceptance": [
         "Tests verify correct handling of unusually large string payloads.",
         "Output string should match the exact length of the concatenated chunks."
-      ]
+      ],
+      "blocked_reason": "Paused as legacy low-risk/test-only queue item without concrete live smoke, transcript, CI failure, or offline reproduction evidence. Resume only if that evidence shows this exact behavior matters."
     },
     {
       "id": "dashboard-logout-redirection",
@@ -878,7 +879,8 @@
       "acceptance": [
         "Tests verify /auth/logout clears the session.",
         "Subsequent requests after logout should return 401."
-      ]
+      ],
+      "blocked_reason": "Paused as legacy low-risk/test-only queue item without concrete live smoke, transcript, CI failure, or offline reproduction evidence. Resume only if that evidence shows this exact behavior matters."
     },
     {
       "id": "proxy-config-env-overrides-coverage",
@@ -910,7 +912,8 @@
       "acceptance": [
         "Tests verify request transformation when system message is absent.",
         "Anthropic request must correctly omit system field if empty."
-      ]
+      ],
+      "blocked_reason": "Paused as legacy low-risk/test-only queue item without concrete live smoke, transcript, CI failure, or offline reproduction evidence. Resume only if that evidence shows this exact behavior matters."
     },
     {
       "id": "proxy-model-alias-case-sensitivity",
@@ -926,7 +929,8 @@
       "acceptance": [
         "Tests verify case-insensitive alias lookups.",
         "Tests verify original model name is used if mapping fails entirely."
-      ]
+      ],
+      "blocked_reason": "Paused as legacy low-risk/test-only queue item without concrete live smoke, transcript, CI failure, or offline reproduction evidence. Resume only if that evidence shows this exact behavior matters."
     },
     {
       "id": "proxy-notion-no-workspace-error-tests",
@@ -943,7 +947,8 @@
       "acceptance": [
         "Tests verify attempting to proxy to an account without a workspace yields 409.",
         "Tests verify a valid account creates a session and redirects to /ai."
-      ]
+      ],
+      "blocked_reason": "Paused as legacy low-risk/test-only queue item without concrete live smoke, transcript, CI failure, or offline reproduction evidence. Resume only if that evidence shows this exact behavior matters."
     },
     {
       "id": "proxy-best-account-selection-tests",
@@ -960,7 +965,8 @@
       "acceptance": [
         "Tests verify account pool selection prefers non-exhausted accounts.",
         "Tests verify account selection properly handles lock contention."
-      ]
+      ],
+      "blocked_reason": "Paused as legacy low-risk/test-only queue item without concrete live smoke, transcript, CI failure, or offline reproduction evidence. Resume only if that evidence shows this exact behavior matters."
     },
     {
       "id": "claude-code-tool-schema-fallback-test",
