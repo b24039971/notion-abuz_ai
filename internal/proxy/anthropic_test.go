@@ -296,3 +296,32 @@ func TestAnthropicTrimCitationContext_ShortContexts(t *testing.T) {
 		}
 	}
 }
+
+func TestAnthropicTrimCitationContext_Malformed(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("trimCitationContext panicked on malformed context: %v", r)
+		}
+	}()
+
+	testCases := []string{
+		strings.Repeat("word", 100), // single very long word (no spaces)
+		strings.Repeat(" ", 400),    // just spaces
+		"\n\t\r",                    // just control characters/whitespace
+		strings.Repeat("\n", 400),   // very long newline sequence
+	}
+
+	for _, tc := range testCases {
+		res := trimCitationContext(tc)
+		runes := []rune(res)
+		if len(runes) > 320 {
+			t.Errorf("trimCitationContext returned string longer than maxRunes (320): len = %d", len(runes))
+		}
+
+		// If the input is <= 320 runes, the output should match the input
+		origRunes := []rune(tc)
+		if len(origRunes) <= 320 && res != tc {
+			t.Errorf("Expected string %q to be unchanged, got %q", tc, res)
+		}
+	}
+}

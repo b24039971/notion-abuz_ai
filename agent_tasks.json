@@ -1694,7 +1694,7 @@
     },
     {
       "id": "proxy-anthropic-trimcitationcontext-malformed-8df2b728",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for Anthropic trimCitationContext robustness with single-word contexts",
