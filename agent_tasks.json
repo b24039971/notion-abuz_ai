@@ -1852,6 +1852,30 @@
       ]
     },
     {
+      "id": "claude-code-local-live-smoke-artifact-triage-loop",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Turn local live-smoke failure artifacts into runtime bridge fixes",
+      "description": "Use the local live smoke artifacts produced by rdsh_local_live_smoke.yml to define the next reproducible Claude Code bridge failure class. If artifacts show a concrete runtime failure, implement one bounded proxy fix with regression coverage; if artifacts are missing or insufficient, improve the local artifact capture path instead of adding isolated parser edge-case tests.",
+      "allowed_paths": [
+        ".github/workflows/rdsh_local_live_smoke.yml",
+        ".github/scripts/rdsh-local-live-smoke.sh",
+        "internal/proxy/anthropic.go",
+        "internal/proxy/openai.go",
+        "internal/proxy/tools.go",
+        "internal/proxy/*_test.go",
+        "docs/claude-code-integration.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "PR identifies the local live-smoke artifact or missing artifact signal being addressed.",
+        "If the artifact shows a runtime bridge bug, the PR includes the smallest runtime fix plus focused regression coverage.",
+        "If the artifact signal is insufficient, the PR improves local live-smoke artifact capture or documents the exact missing signal.",
+        "PR does not add another single-edge-case parser, HandleFrame, SSE keepalive, or trimCitationContext test unless the local live-smoke artifact proves that exact gap matters."
+      ]
+    },
+    {
       "id": "proxy-anthropic-sse-keepalive-robustness-0f83edfa",
       "status": "blocked",
       "area": "proxy",
@@ -1989,7 +2013,7 @@
     },
     {
       "id": "proxy-anthropic-sse-keepalive-robustness-empty-lines-2c3f8",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for Anthropic SSE keep-alive robustness variant 2",
@@ -2001,7 +2025,8 @@
       "acceptance": [
         "Tests cover Anthropic stream handler logic with empty line keep-alive heartbeats.",
         "Handler translates them safely."
-      ]
+      ],
+      "blocked_reason": "Paused to stop autonomous generation of narrow test-only edge cases. Resume only if a live Claude Code bridge failure proves this exact gap matters."
     }
   ]
 }
