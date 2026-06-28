@@ -163,6 +163,26 @@ func TestAnthropicHandleFrameRobustness_UnknownEvent(t *testing.T) {
 	}
 }
 
+func TestAnthropicHandleFrameRobustness_InvalidEventNameTypes(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("parseNDJSONStream panicked on invalid nested payload types: %v", r)
+		}
+	}()
+
+	invalidNestedStream := bytes.NewBufferString(`{"type": "agent-inference", "value": [{"type": "tool_use", "id": 123, "name": 456}]}
+{"type": "agent-tool-result", "toolCallId": ["array", "instead", "of", "string"]}
+{"type": "researcher-next-steps", "value": {"nextSteps": [{"key": 123, "displayName": 456}]}}
+`)
+
+	var cb StreamCallback = func(delta string, done bool, usage *UsageInfo) {}
+
+	err := parseNDJSONStream(invalidNestedStream, "test-req", cb, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Logf("Returned error as expected or handled gracefully: %v", err)
+	}
+}
+
 func TestAnthropicHandleFrameRobustness_InvalidEventNameFormat(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {

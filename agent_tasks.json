@@ -1644,7 +1644,7 @@
     },
     {
       "id": "proxy-anthropic-handleframe-robustness-invalid-event-name-types-8df2b725",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for Anthropic HandleFrame robustness missing properties in various payload shapes",
@@ -1656,7 +1656,8 @@
       "acceptance": [
         "Tests cover anthropic stream handler logic with unexpected shapes for inner objects.",
         "Handler handles it safely instead of panicking."
-      ]
+      ],
+      "completion_notes": "Added TestAnthropicHandleFrameRobustness_InvalidEventNameTypes to verify graceful handling of incorrectly typed nested fields like id and name."
     },
     {
       "id": "proxy-anthropic-trimcitationcontext-empty-8df2b726",
@@ -1722,6 +1723,54 @@
         "Handler handles it safely instead of panicking."
       ],
       "completion_notes": "Added TestOpenAIChatStreamTranscoder_MissingDeltaFields and TestOpenAIResponsesStreamTranscoder_MissingDeltaFields to verify robustness with missing delta fields."
+    },
+    {
+      "id": "proxy-anthropic-sse-keepalive-robustness-0f83edfa",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for Anthropic SSE keep-alive robustness",
+      "description": "Ensure that Anthropic stream handlers properly parse and safely translate empty lines or lines starting with a colon into ping events without stream corruption.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover Anthropic stream handler logic with keep-alive heartbeats.",
+        "Handler translates them safely to ping events without panicking."
+      ]
+    },
+    {
+      "id": "proxy-openai-stream-handleframe-missing-model-5193c730",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for OpenAI HandleFrame gracefully handling missing model",
+      "description": "Ensure that the OpenAI stream transcoder safely defaults or ignores when the model field is missing from incoming events.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover openai stream handler logic with missing model fields.",
+        "Handler handles it safely instead of panicking."
+      ]
+    },
+    {
+      "id": "proxy-openai-responses-stream-handleframe-empty-payload-0c473ca9",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for OpenAI Responses HandleFrame empty payloads",
+      "description": "Ensure that the OpenAI Responses stream transcoder safely handles completely empty data payloads without panicking.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover openai responses stream handler logic with empty payloads.",
+        "Handler handles it safely instead of panicking."
+      ]
     }
   ]
 }
