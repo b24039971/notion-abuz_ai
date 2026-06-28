@@ -1,0 +1,46 @@
+name: Automation Meta Automerge
+
+on:
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: automation-meta-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-merge:
+    runs-on: ubuntu-latest
+    if: >
+      github.event.pull_request.draft == false &&
+      startsWith(github.event.pull_request.head.ref, 'automation-health-meta-') &&
+      contains(github.event.pull_request.body || '', 'AUTOMATION_HEALTH_META_TASK')
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Verify manifest-only automation meta PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          gh pr diff "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --name-only | tee /tmp/pr-files.txt
+          if [ "$(wc -l < /tmp/pr-files.txt)" -ne 1 ] || ! grep -qx 'agent_tasks.json' /tmp/pr-files.txt; then
+            echo "::error::Automation meta PRs may only change agent_tasks.json."
+            exit 1
+          fi
+
+      - name: Validate autonomous task manifest
+        run: python3 scripts/validate_agent_tasks.py agent_tasks.json
+
+      - name: Merge automation meta PR
+        env:
+          GH_TOKEN: ${{ secrets.PAT || github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: gh pr merge "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --squash --delete-branch

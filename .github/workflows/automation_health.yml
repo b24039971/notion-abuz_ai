@@ -2,6 +2,15 @@ name: Automation Health
 
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "shadow reports only; enforce creates manifest-only automation meta-task PRs"
+        required: true
+        default: "shadow"
+        type: choice
+        options:
+          - shadow
+          - enforce
   schedule:
     - cron: "0 */6 * * *"
 
@@ -50,3 +59,39 @@ jobs:
           path: |
             automation-health.json
             automation-health.md
+
+  meta-task:
+    needs: report
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' &&
+      inputs.mode == 'enforce' &&
+      needs.report.outputs.create_meta_task == 'true'
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: read
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Download automation health report
+        uses: actions/download-artifact@v4
+        with:
+          name: automation-health
+          path: .
+
+      - name: Create automation meta-task PR
+        id: meta
+        env:
+          GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
+        run: |
+          python3 .github/scripts/create-automation-meta-task-pr.py \
+            --mode enforce \
+            --repo "$GITHUB_REPOSITORY" \
+            --health-report automation-health.json \
+            --manifest agent_tasks.json \
+            --github-output "$GITHUB_OUTPUT" \
+            --json
