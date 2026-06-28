@@ -1580,7 +1580,7 @@
     },
     {
       "id": "proxy-anthropic-handleframe-robustness-invalid-event-name-8df2b723",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for Anthropic HandleFrame robustness invalid event name format",
@@ -1656,6 +1656,54 @@
       "acceptance": [
         "Tests cover anthropic stream handler logic with unexpected shapes for inner objects.",
         "Handler handles it safely instead of panicking."
+      ]
+    },
+    {
+      "id": "proxy-anthropic-trimcitationcontext-empty-8df2b726",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for Anthropic trimCitationContext robustness with empty contexts",
+      "description": "Ensure that trimCitationContext handles completely empty string contexts gracefully without panicking or out-of-bounds slicing.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover trimCitationContext logic with empty strings.",
+        "No panics occur and returns empty string as expected."
+      ]
+    },
+    {
+      "id": "proxy-anthropic-trimcitationcontext-short-8df2b727",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for Anthropic trimCitationContext robustness with short contexts",
+      "description": "Ensure that trimCitationContext handles contexts shorter than 50 characters gracefully without panicking or out-of-bounds slicing.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover trimCitationContext logic with strings < 50 chars.",
+        "No panics occur and returns expected subset string."
+      ]
+    },
+    {
+      "id": "proxy-anthropic-trimcitationcontext-malformed-8df2b728",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for Anthropic trimCitationContext robustness with single-word contexts",
+      "description": "Ensure that trimCitationContext handles contexts with very few words or no spaces gracefully without panicking or out-of-bounds slicing.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover trimCitationContext logic with single long words or whitespace edge cases.",
+        "No panics occur and returns expected subset string."
       ]
     }
   ]

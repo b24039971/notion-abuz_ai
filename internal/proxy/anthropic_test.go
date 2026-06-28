@@ -162,3 +162,25 @@ func TestAnthropicHandleFrameRobustness_UnknownEvent(t *testing.T) {
 		t.Logf("Returned error as expected or handled gracefully: %v", err)
 	}
 }
+
+func TestAnthropicHandleFrameRobustness_InvalidEventNameFormat(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("parseNDJSONStream panicked on invalid event name format: %v", r)
+		}
+	}()
+
+	invalidEventStream := bytes.NewBufferString(`{"type": 123, "data": {}}
+{"type": ["not-a-string"], "data": {}}
+{"type": {"obj": true}, "data": {}}
+{"type": null, "data": {}}
+{"type": "agent-inference"}
+`)
+
+	var cb StreamCallback = func(delta string, done bool, usage *UsageInfo) {}
+
+	err := parseNDJSONStream(invalidEventStream, "test-req", cb, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Logf("Returned error as expected or handled gracefully: %v", err)
+	}
+}
