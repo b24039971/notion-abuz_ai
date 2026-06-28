@@ -579,3 +579,66 @@ func TestClaudeCodeAgentLoop_ToolResultContinuationInterleaved(t *testing.T) {
 		t.Errorf("Follow-up should contain the latest Read tool result")
 	}
 }
+
+// TestClaudeCodeAgentLoop_RealisticReadEditTestFinalize verifies that a realistic
+// multi-turn loop simulating inspect -> edit/shell -> result -> finalize correctly
+// maintains context and preserves final-answer extraction correctly.
+func TestClaudeCodeAgentLoop_RealisticReadEditTestFinalize(t *testing.T) {
+	messages := []ChatMessage{
+		{Role: "user", Content: "Please review the router logic, run the test, and fix any issues."},
+		// Turn 1: Assistant reads the file
+		{Role: "assistant", Content: "Let me check the code first.", ToolCalls: []ToolCall{
+			{ID: "call_1", Type: "function", Function: ToolCallFunction{Name: "Read", Arguments: `{"file_path":"router.go"}`}},
+		}},
+		{Role: "tool", Name: "Read", ToolCallID: "call_1", Content: "func Router() { return 404 }"},
+		// Turn 2: Assistant runs a test
+		{Role: "assistant", Content: "Now let's run the tests.", ToolCalls: []ToolCall{
+			{ID: "call_2", Type: "function", Function: ToolCallFunction{Name: "Bash", Arguments: `{"command":"go test ./router"}`}},
+		}},
+		{Role: "tool", Name: "Bash", ToolCallID: "call_2", Content: "FAIL: Expected 200, got 404\nFAIL router.go"},
+		// Turn 3: Assistant edits the file
+		{Role: "assistant", Content: "The test failed. I will edit the router to return 200.", ToolCalls: []ToolCall{
+			{ID: "call_3", Type: "function", Function: ToolCallFunction{Name: "Edit", Arguments: `{"file_path":"router.go", "content":"func Router() { return 200 }"}`}},
+		}},
+		{Role: "tool", Name: "Edit", ToolCallID: "call_3", Content: "File updated"},
+		// Turn 4: Assistant tests again
+		{Role: "assistant", Content: "I've edited the file. Let's verify.", ToolCalls: []ToolCall{
+			{ID: "call_4", Type: "function", Function: ToolCallFunction{Name: "Bash", Arguments: `{"command":"go test ./router"}`}},
+		}},
+		{Role: "tool", Name: "Bash", ToolCallID: "call_4", Content: "PASS\nok\trouter\t0.002s"},
+	}
+
+	followUp := buildSessionChainFollowUp(messages, "Read, Bash, Edit", "")
+	if len(followUp) != 1 {
+		t.Fatalf("expected 1 follow up message, got %d", len(followUp))
+	}
+	content := followUp[0].Content
+
+	// Ensure earlier tool results are dropped (only latest tool block applies)
+	if strings.Contains(content, "[Read]: func Router()") {
+		t.Errorf("follow-up should not contain earlier Read result")
+	}
+	if strings.Contains(content, "FAIL: Expected 200, got 404") {
+		t.Errorf("follow-up should not contain the earlier failing Bash result")
+	}
+	if strings.Contains(content, "[Edit]: File updated") {
+		t.Errorf("follow-up should not contain the earlier Edit result")
+	}
+
+	// Ensure the latest tool result is included
+	if !strings.Contains(content, "[Bash]: PASS") {
+		t.Errorf("follow-up should contain the latest passing Bash result")
+	}
+
+	// Verify that final-answer instructions are included so the model knows how to conclude
+	if !strings.Contains(content, "__done__") {
+		t.Errorf("follow-up must include __done__ instruction to properly end the loop")
+	}
+
+	// Final verification that final answer mode works and isn't flagged as drift
+	goodResponse := `{"name": "__done__", "arguments": {"result": "The router issue has been fixed and tests now pass."}}`
+	isNoToolGood, _ := detectToolBridgeNoToolResponse(goodResponse)
+	if isNoToolGood {
+		t.Errorf("Valid JSON final answer was incorrectly flagged as tool-bridge refusal")
+	}
+}

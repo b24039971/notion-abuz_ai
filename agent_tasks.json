@@ -1811,7 +1811,7 @@
     },
     {
       "id": "claude-code-realistic-read-edit-test-finalize-smoke-fixture",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Add realistic Claude Code read-edit-test-finalize bridge fixture",
@@ -2114,6 +2114,21 @@
       "acceptance": [
         "Tests explicitly capture and assert on the second returned 'reason' value from detectToolBridgeNoToolResponse.",
         "Verify that 'workspace reframing' and 'tool-call refusal' reasons are correctly assigned in their respective test cases."
+      ]
+    },
+    {
+      "id": "proxy-claude-code-workspace-reframing-detection-observability",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test coverage for Workspace Reframing detection observability",
+      "description": "Add tests to verify that Workspace Reframing is correctly detected and its failure class reason correctly bubbled up in logging decisions, closing the loop on earlier diagnostic additions without adding live network calls.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_bridge_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify Workspace Reframing detection bubbles up the correct reason class."
       ]
     }
   ]
