@@ -1743,7 +1743,7 @@
     },
     {
       "id": "proxy-openai-stream-handleframe-missing-model-5193c730",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for OpenAI HandleFrame gracefully handling missing model",
@@ -1755,7 +1755,8 @@
       "acceptance": [
         "Tests cover openai stream handler logic with missing model fields.",
         "Handler handles it safely instead of panicking."
-      ]
+      ],
+      "completion_notes": "Added TestOpenAIChatStreamTranscoder_MissingModel to verify graceful handling of missing model."
     },
     {
       "id": "proxy-openai-responses-stream-handleframe-empty-payload-0c473ca9",
@@ -1803,6 +1804,54 @@
       "acceptance": [
         "Tests cover trimCitationContext logic with long sequences of emojis or multi-byte characters.",
         "No panics occur and returns expected valid string subset."
+      ]
+    },
+    {
+      "id": "proxy-anthropic-sse-keepalive-robustness-0f83edfa-variant-1",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for Anthropic SSE keep-alive robustness variant 1",
+      "description": "Ensure that Anthropic stream handlers properly parse and safely ignore empty lines.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover Anthropic stream handler logic with empty line keep-alive heartbeats.",
+        "Handler translates them safely."
+      ]
+    },
+    {
+      "id": "proxy-openai-responses-stream-handleframe-missing-event-0c473ca9",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for OpenAI Responses HandleFrame unknown events",
+      "description": "Ensure that the OpenAI Responses stream transcoder safely handles completely unknown events without panicking.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover openai responses stream handler logic with unknown events.",
+        "Handler handles it safely instead of panicking."
+      ]
+    },
+    {
+      "id": "proxy-anthropic-handleframe-robustness-missing-event-properties-variant-1",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for Anthropic HandleFrame robustness missing properties in event payloads variant 1",
+      "description": "Ensure that if the Anthropic stream transcoder logic receives valid JSON but fields like id or name at the root are incorrectly typed, it handles them gracefully without panicking.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover anthropic stream handler logic with missing root properties.",
+        "Handler handles it safely instead of panicking."
       ]
     }
   ]

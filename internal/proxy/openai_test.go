@@ -1290,6 +1290,45 @@ func TestOpenAIChatStreamTranscoder_MissingFields(t *testing.T) {
 	}
 }
 
+func TestOpenAIChatStreamTranscoder_MissingModel(t *testing.T) {
+	rr := httptest.NewRecorder()
+	// Using empty string as model to ensure it handles missing models gracefully without panicking
+	transcoder := newOpenAIChatStreamTranscoder(rr, rr, "chatcmpl_test_missing_model", "", 123, true)
+
+	frames := []anthropicSSEFrame{
+		{
+			Event: "message_start",
+			// Payload missing the "model" field entirely within "message"
+			Data: json.RawMessage(`{"message": {"id": "msg_123", "role": "assistant", "usage": {"input_tokens": 10}}}`),
+		},
+		{
+			Event: "content_block_start",
+			Data:  json.RawMessage(`{"index": 0, "content_block": {"type": "text", "text": ""}}`),
+		},
+		{
+			Event: "content_block_delta",
+			Data:  json.RawMessage(`{"index": 0, "delta": {"type": "text_delta", "text": "Hello"}}`),
+		},
+		{
+			Event: "content_block_stop",
+			Data:  json.RawMessage(`{"index": 0}`),
+		},
+		{
+			Event: "message_delta",
+			Data:  json.RawMessage(`{"delta": {"stop_reason": "end_turn"}}`),
+		},
+		{
+			Event: "message_stop",
+			Data:  json.RawMessage(`{}`),
+		},
+	}
+
+	for _, frame := range frames {
+		// This should not panic.
+		_ = transcoder.HandleFrame(frame)
+	}
+}
+
 func TestOpenAIResponsesStreamTranscoder_UnknownEventVariants(t *testing.T) {
 	rr := httptest.NewRecorder()
 	transcoder := newOpenAIResponsesStreamTranscoder(rr, rr, "resp_heartbeat", "gpt-5", 123)
