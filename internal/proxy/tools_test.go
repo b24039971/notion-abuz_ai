@@ -493,6 +493,16 @@ func TestParseToolCallJSON_WrapperFormats(t *testing.T) {
 			wantNil: true,
 		},
 		{
+			name:    "malformed json - missing colons",
+			jsonStr: `{"name" "test", "arguments" {}}`,
+			wantNil: true,
+		},
+		{
+			name:    "malformed json - wrapper missing colons",
+			jsonStr: `{"tool_call": {"name" "test", "arguments" {}}}`,
+			wantNil: true,
+		},
+		{
 			name:     "flat format with empty string arguments",
 			jsonStr:  `{"name": "test_empty_str_args", "arguments": ""}`,
 			wantNil:  false,
