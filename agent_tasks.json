@@ -1831,7 +1831,7 @@
     },
     {
       "id": "claude-code-runtime-fix-from-next-live-smoke-failure",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "medium",
       "title": "Implement one runtime fix from the next reproduced Claude Code live-smoke failure",
@@ -1849,7 +1849,8 @@
         "PR names the reproduced live-smoke or transcript failure class.",
         "PR includes a runtime bridge fix plus focused regression coverage, or marks the task blocked with the exact missing evidence.",
         "PR does not create more generic parser/stream robustness follow-up tasks unless the live failure requires them."
-      ]
+      ],
+      "blocked_reason": "Paused by task selection policy; resume only with concrete live smoke, transcript, CI, or offline reproduction evidence. No runtime failure artifacts are currently available to reproduce."
     },
     {
       "id": "claude-code-local-live-smoke-artifact-triage-loop",
@@ -2193,6 +2194,69 @@
       ],
       "acceptance": [
         "Tests cover tool result processing and correctly observe metrics like content length."
+      ]
+    },
+    {
+      "id": "claude-code-tool-call-refusal-coverage-4dcbad6a",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add offline coverage for tool-call refusal regression class",
+      "description": "Expand internal/proxy/anthropic_bridge_test.go to add test coverage for 'tool-call refusal' behaviors where Claude Code declines tool execution and instead outputs prose to manually execute commands.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_bridge_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests are added covering at least 3 variations of tool-call refusal."
+      ]
+    },
+    {
+      "id": "claude-code-json-tool-call-loss-coverage-9d781f19",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add offline coverage for JSON tool-call loss regression class",
+      "description": "Add parsing or handler tests confirming the proxy gracefully handles or logs when Claude Code loses JSON structure and falls back to conversational text in a tool-call context.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "internal/proxy/anthropic_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify proxy behavior when completely unstructured text replaces expected JSON tool calls."
+      ]
+    },
+    {
+      "id": "proxy-observability-workspace-reframing-4964e353",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Ensure workspace reframing events are logged as bridge decisions",
+      "description": "Verify and test that 'workspace reframing' is explicitly emitted as a bridge decision log so that live smoke failures of this type can be distinguished from standard tool-call loss.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_bridge_test.go",
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Bridge decision logging includes workspace reframing explicitly.",
+        "Tests cover the new or existing observability path for this signal."
+      ]
+    },
+    {
+      "id": "claude-code-live-smoke-artifact-collection-ccdad275",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Expand diagnostic markers in live smoke artifacts",
+      "description": "Improve .github/scripts/rdsh-local-live-smoke.sh to extract a specific marker indicating whether the final answer drift was due to tool-call loss, workspace reframing, or Notion persona leakage.",
+      "allowed_paths": [
+        ".github/scripts/rdsh-local-live-smoke.sh",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "rdsh-local-live-smoke.sh explicitly checks for workspace reframing and tool-call refusal keywords."
       ]
     }
   ]
