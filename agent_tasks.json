@@ -1754,15 +1754,18 @@
       "status": "todo",
       "area": "proxy",
       "risk": "low",
-      "title": "Add live-smoke transcript observability to capture bridge failures",
-      "description": "Update the rdsh_live_smoke.yml workflow or add a helper script to capture and upload the raw Anthropic and OpenAI responses as artifacts when the live smoke test fails, so we have concrete offline fixtures for the next runtime fix.",
+      "title": "Add local live-smoke transcript observability to capture bridge failures",
+      "description": "Update the local live smoke workflow or helper script so PR code is built on the GitHub runner, started with LIVE_NOTION_ACCOUNTS_B64 accounts, and captures redacted OpenAI-compatible and Anthropic response artifacts on failure. Do not use the remote RDSH_BASE_URL smoke path for this task because it tests already-deployed service behavior rather than the PR changes.",
       "allowed_paths": [
-        ".github/workflows/rdsh_live_smoke.yml",
+        ".github/workflows/rdsh_local_live_smoke.yml",
+        ".github/scripts/rdsh-local-live-smoke.sh",
         "agent_tasks.json"
       ],
       "acceptance": [
-        "The live smoke workflow uploads the raw response as an artifact on failure.",
-        "A clear signal is available for offline reproduction."
+        "The local live smoke path builds the current PR code before testing.",
+        "The local live smoke path uses LIVE_NOTION_ACCOUNTS_B64-backed accounts rather than the remote RDSH_BASE_URL endpoint.",
+        "OpenAI-compatible and Anthropic local smoke responses are captured as artifacts on failure without logging secrets.",
+        "A clear signal is available for offline reproduction from the same code under review."
       ]
     },
     {
