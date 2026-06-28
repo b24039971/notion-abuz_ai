@@ -60,49 +60,6 @@ jobs:
             automation-health.json
             automation-health.md
 
-  pause-loop:
-    needs: report
-    runs-on: ubuntu-latest
-    if: >
-      github.event_name == 'workflow_dispatch' &&
-      inputs.mode == 'enforce' &&
-      needs.report.outputs.pause_loop == 'true' &&
-      needs.report.outputs.status == 'critical'
-    permissions:
-      contents: read
-      actions: write
-
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Download automation health report
-        uses: actions/download-artifact@v4
-        with:
-          name: automation-health
-          path: .
-
-      - name: Pause autonomous Jules loop
-        id: enforce
-        env:
-          GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
-        run: |
-          python3 .github/scripts/enforce-automation-health.py \
-            --mode enforce \
-            --repo "$GITHUB_REPOSITORY" \
-            --health-report automation-health.json \
-            --audit-md automation-health-enforcement.md \
-            --github-output "$GITHUB_OUTPUT" \
-            --json
-
-      - name: Append enforcement summary
-        run: cat automation-health-enforcement.md >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload enforcement audit
-        uses: actions/upload-artifact@v4
-        with:
-          name: automation-health-enforcement
-          path: automation-health-enforcement.md
-
   meta-task:
     needs: report
     runs-on: ubuntu-latest

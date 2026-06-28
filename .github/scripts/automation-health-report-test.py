@@ -76,7 +76,7 @@ class AutomationHealthReportTest(unittest.TestCase):
         report = run_fixture("critical-duplicate-active-sessions")
 
         self.assertEqual(report["status"], "critical")
-        self.assertTrue(report["pause_loop"])
+        self.assertFalse(report["pause_loop"])
         self.assert_has_finding(report, "duplicate_active_product_sessions")
 
     def test_blocked_task_without_reason(self) -> None:

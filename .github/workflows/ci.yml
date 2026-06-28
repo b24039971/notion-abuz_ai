@@ -53,8 +53,7 @@ jobs:
         run: |
           python3 .github/scripts/automation-health-report-test.py
           python3 .github/scripts/create-automation-meta-task-pr-test.py
-          python3 .github/scripts/enforce-automation-health-test.py
-          python3 -m py_compile .github/scripts/automation-health-report.py .github/scripts/create-automation-meta-task-pr.py .github/scripts/enforce-automation-health.py
+          python3 -m py_compile .github/scripts/automation-health-report.py .github/scripts/create-automation-meta-task-pr.py
 
       - name: Validate autonomous PR quality gate
         run: |

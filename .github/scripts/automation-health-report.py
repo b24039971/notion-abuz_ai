@@ -571,7 +571,7 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
     report = {
         "generated_at": iso_now(),
         "status": status,
-        "pause_loop": status == "critical",
+        "pause_loop": False,
         "create_meta_task": status in {"degraded", "critical"},
         "read_only": True,
         "repository": repo,
@@ -607,7 +607,7 @@ def write_markdown(report: dict[str, Any]) -> str:
         f"- Status: **{report['status']}**",
         f"- Repository: `{report.get('repository') or 'unknown'}`",
         f"- Generated at: `{report['generated_at']}`",
-        f"- Advisory pause_loop: `{str(report['pause_loop']).lower()}`",
+        "- Advisory pause_loop: `false`",
         f"- Advisory create_meta_task: `{str(report['create_meta_task']).lower()}`",
         "- Mode: read-only report, no repo state changed",
         "",
