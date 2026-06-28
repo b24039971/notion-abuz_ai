@@ -2229,7 +2229,7 @@
     },
     {
       "id": "proxy-observability-workspace-reframing-4964e353",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Ensure workspace reframing events are logged as bridge decisions",
@@ -2277,6 +2277,40 @@
         "PR identifies the root cause of the local live-smoke failure using the extended diagnostics.",
         "PR implements the smallest safe runtime bridge fix to resolve the Claude Code compatibility issue.",
         "Focused regression tests are added to verify the fix."
+      ]
+    },
+    {
+      "id": "proxy-observability-notion-persona-leakage-4964e354",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Ensure Notion persona leakage events are logged as bridge decisions",
+      "description": "Verify and test that 'Notion persona leakage' is explicitly emitted as a bridge decision log.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_bridge_test.go",
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Bridge decision logging includes Notion persona leakage explicitly.",
+        "Tests cover the new or existing observability path for this signal."
+      ]
+    },
+    {
+      "id": "proxy-observability-tool-call-refusal-logging-4964e355",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Ensure tool-call refusal events are logged as bridge decisions",
+      "description": "Verify and test that 'tool-call refusal' is explicitly emitted as a bridge decision log.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_bridge_test.go",
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Bridge decision logging includes tool-call refusal explicitly.",
+        "Tests cover the new or existing observability path for this signal."
       ]
     }
   ]
