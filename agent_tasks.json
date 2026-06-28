@@ -1128,7 +1128,7 @@
     },
     {
       "id": "proxy-chat-stream-handleframe-invalid-error",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add chat stream error handling test for error event",
@@ -1220,6 +1220,54 @@
       "acceptance": [
         "Additional tests are added to verify parseToolCallJSON behavior on single quotes in JSON.",
         "Tests pass and verify safe fallback."
+      ]
+    },
+    {
+      "id": "proxy-chat-stream-handleframe-invalid-content-block-delta",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add chat stream error handling test for content_block_delta type mismatch",
+      "description": "Ensure that if HandleFrame receives unexpected types in content_block_delta fields, it bubbles up the error or continues safely without panicking.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover stream transcoders with unexpected types for content_block_delta fields.",
+        "Transcoders handle it safely instead of panicking."
+      ]
+    },
+    {
+      "id": "proxy-chat-stream-handleframe-invalid-content-block-start-types",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add chat stream error handling test for content_block_start type mismatch",
+      "description": "Ensure that if HandleFrame receives unexpected types in content_block_start fields, it bubbles up the error or continues safely without panicking.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover stream transcoders with unexpected types for content_block_start fields.",
+        "Transcoders handle it safely instead of panicking."
+      ]
+    },
+    {
+      "id": "proxy-chat-stream-handleframe-invalid-message-start",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add chat stream error handling test for message_start type mismatch",
+      "description": "Ensure that if HandleFrame receives unexpected types in message_start fields, it bubbles up the error or continues safely without panicking.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover stream transcoders with unexpected types for message_start fields.",
+        "Transcoders handle it safely instead of panicking."
       ]
     }
   ]
