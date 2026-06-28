@@ -1288,7 +1288,7 @@
     },
     {
       "id": "proxy-chat-stream-handleframe-invalid-message-delta-types",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add chat stream error handling test for message_delta type mismatch",
