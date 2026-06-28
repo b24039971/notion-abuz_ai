@@ -2271,7 +2271,7 @@
     },
     {
       "id": "claude-code-live-smoke-artifact-collection-ccdad275",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Expand diagnostic markers in live smoke artifacts",

@@ -157,6 +157,18 @@ if ! grep -q 'OK_CLAUDE_PROXY_OPENAI' <<<"$openai_content"; then
   grep -E '\[bridge\] decision:|\[session\] decision:' /tmp/notion-manager.stderr.log || true
   exit 1
 fi
+if grep -Eiq 'notion workspace|notion context|our workspace|reframe the workspace|switch workspace|your notion workspace' <<<"$openai_content"; then
+  echo "::error::OpenAI-compatible local smoke drifted due to workspace reframing."
+  echo "Diagnostic (first 256 chars): ${openai_content:0:256}"
+  grep -E '\[bridge\] decision:|\[session\] decision:' /tmp/notion-manager.stderr.log || true
+  exit 1
+fi
+if grep -Eiq "don't have access to your local machine|cannot run commands directly|cannot access your local system|unable to execute code|you will need to run this|don't have direct access|cannot execute commands directly" <<<"$openai_content"; then
+  echo "::error::OpenAI-compatible local smoke drifted due to tool-call refusal."
+  echo "Diagnostic (first 256 chars): ${openai_content:0:256}"
+  grep -E '\[bridge\] decision:|\[session\] decision:' /tmp/notion-manager.stderr.log || true
+  exit 1
+fi
 if grep -Eiq 'notion|workspace|page|document' <<<"$openai_content"; then
   echo "::error::OpenAI-compatible local smoke leaked Notion/workspace/page/document persona text."
   echo "Diagnostic (first 256 chars): ${openai_content:0:256}"
@@ -190,6 +202,18 @@ echo "Anthropic smoke content: $anthropic_content"
 
 if ! grep -q 'OK_CLAUDE_PROXY_ANTHROPIC' <<<"$anthropic_content"; then
   echo "::error::Anthropic local smoke did not contain the expected token."
+  echo "Diagnostic (first 256 chars): ${anthropic_content:0:256}"
+  grep -E '\[bridge\] decision:|\[session\] decision:' /tmp/notion-manager.stderr.log || true
+  exit 1
+fi
+if grep -Eiq 'notion workspace|notion context|our workspace|reframe the workspace|switch workspace|your notion workspace' <<<"$anthropic_content"; then
+  echo "::error::Anthropic local smoke drifted due to workspace reframing."
+  echo "Diagnostic (first 256 chars): ${anthropic_content:0:256}"
+  grep -E '\[bridge\] decision:|\[session\] decision:' /tmp/notion-manager.stderr.log || true
+  exit 1
+fi
+if grep -Eiq "don't have access to your local machine|cannot run commands directly|cannot access your local system|unable to execute code|you will need to run this|don't have direct access|cannot execute commands directly" <<<"$anthropic_content"; then
+  echo "::error::Anthropic local smoke drifted due to tool-call refusal."
   echo "Diagnostic (first 256 chars): ${anthropic_content:0:256}"
   grep -E '\[bridge\] decision:|\[session\] decision:' /tmp/notion-manager.stderr.log || true
   exit 1
