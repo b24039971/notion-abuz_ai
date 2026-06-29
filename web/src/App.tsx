@@ -199,7 +199,7 @@ function LoginPage({ onSuccess }: { onSuccess: () => void }) {
       setPassword('')
       inputRef.current?.focus()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'ВойтиОшибка запроса')
+      setError(err instanceof Error ? err.message : 'Ошибка запроса')
       setPassword('')
       inputRef.current?.focus()
     } finally {

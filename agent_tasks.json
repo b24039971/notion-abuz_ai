@@ -45,7 +45,7 @@
   "tasks": [
     {
       "id": "dashboard-login-error-toast-coverage-app-tsx-cb13a8e9",
-      "status": "todo",
+      "status": "done",
       "area": "web",
       "risk": "low",
       "title": "Verify dashboard login error toast logic in App.tsx",
@@ -2478,6 +2478,23 @@
       ],
       "acceptance": [
         "Tests verify proxy behavior when `parseAnthropicSSEFrame` receives partial or malformed `keep-alive` data."
+      ]
+    },
+    {
+      "id": "proxy-stream-transcoder-error-handling-44d759b7",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add error handling for invalid stream transcoder payloads",
+      "description": "Ensure that the proxy handles corrupted or malformed payloads without panicking.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/proxy_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Proxy test added confirming that malformed json payloads do not crash the proxy.",
+        "agent_tasks.json validation passes"
       ]
     }
   ]
