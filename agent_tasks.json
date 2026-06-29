@@ -2701,7 +2701,7 @@
     },
     {
       "id": "proxy-claude-code-tool-call-refusal-prose-coverage-701fc235",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Add offline coverage for tool-call refusal prose edge cases",
