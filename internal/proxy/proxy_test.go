@@ -209,3 +209,29 @@ func TestRequestLoggingMiddleware(t *testing.T) {
 		t.Errorf("Expected X-API-Key header to show as [REDACTED], log: %s", output)
 	}
 }
+
+// TestProxy_StreamTranscoder_MalformedPayloads ensures that the proxy handles corrupted
+// or malformed stream payloads without panicking, specifically in the fallback parsing
+// logic used by stream transcoders when native tool use is not available.
+func TestProxy_StreamTranscoder_MalformedPayloads(t *testing.T) {
+	payloads := []string{
+		`{"tool_call": {"name": "test", "arguments": [1, 2, 3]}}`,
+		`{"name": "test", "arguments": "string"}`,
+		`{"tool_call": {"name": "test", "arguments": null}}`,
+		`<tool_call>not json</tool_call>`,
+		"```json\n{malformed\n```",
+		`{"tool_call": `,
+		`{"name": "test", "arguments": {"nested": }}`,
+		`[1, 2, 3]`,
+		`null`,
+		`"just a string"`,
+		`{"tool_call": null}`,
+		`{"tool_call": {"name": "test"}}`, // Missing arguments
+	}
+
+	for _, p := range payloads {
+		// Ensure this doesn't panic
+		parseToolCalls(p)
+		parseToolCallJSON(p, 0)
+	}
+}

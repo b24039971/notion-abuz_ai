@@ -2482,7 +2482,7 @@
     },
     {
       "id": "proxy-stream-transcoder-error-handling-44d759b7",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add error handling for invalid stream transcoder payloads",
@@ -2495,6 +2495,21 @@
       "acceptance": [
         "Proxy test added confirming that malformed json payloads do not crash the proxy.",
         "agent_tasks.json validation passes"
+      ]
+    },
+    {
+      "id": "proxy-observability-additional-test-8ba48f5c",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Expand proxy observability tests 0",
+      "description": "Add more edge cases for stream observability.",
+      "allowed_paths": [
+        "internal/proxy/proxy_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Test added verifying proper handling of proxy streams."
       ]
     }
   ]

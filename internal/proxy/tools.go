@@ -1250,9 +1250,14 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 
 							isToolCall := false
 							if err := json.Unmarshal([]byte(candidate), &direct); err == nil && direct.Name != "" {
-								argsStr := string(direct.Arguments)
-								if !json.Valid(direct.Arguments) {
-									argsStr = "{}"
+								argsStr := "{}"
+								if json.Valid(direct.Arguments) {
+									var parsed interface{}
+									if err := json.Unmarshal(direct.Arguments, &parsed); err == nil {
+										if _, isMap := parsed.(map[string]interface{}); isMap {
+											argsStr = string(direct.Arguments)
+										}
+									}
 								}
 								toolCalls = append(toolCalls, ToolCall{
 									ID:   fmt.Sprintf("call_%d_%s", foundCalls, generateUUIDv4()[:8]),
@@ -1273,9 +1278,14 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 									} `json:"tool_call"`
 								}
 								if err := json.Unmarshal([]byte(candidate), &wrapper); err == nil && wrapper.ToolCall != nil && wrapper.ToolCall.Name != "" {
-									argsStr := string(wrapper.ToolCall.Arguments)
-									if !json.Valid(wrapper.ToolCall.Arguments) {
-										argsStr = "{}"
+									argsStr := "{}"
+									if json.Valid(wrapper.ToolCall.Arguments) {
+										var parsed interface{}
+										if err := json.Unmarshal(wrapper.ToolCall.Arguments, &parsed); err == nil {
+											if _, isMap := parsed.(map[string]interface{}); isMap {
+												argsStr = string(wrapper.ToolCall.Arguments)
+											}
+										}
 									}
 									toolCalls = append(toolCalls, ToolCall{
 										ID:   fmt.Sprintf("call_%d_%s", foundCalls, generateUUIDv4()[:8]),
