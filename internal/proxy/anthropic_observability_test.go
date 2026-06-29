@@ -70,3 +70,44 @@ func TestEnsureNotionPersonaLeakageLoggedAsDecision(t *testing.T) {
 		t.Fatalf("expected observability log to contain %q, but got:\n%s", expectedLogFragment, output)
 	}
 }
+
+// Tests that a tool-call refusal payload triggers the exact bridge decision log natively.
+func TestEnsureToolCallRefusalLoggedAsDecision(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/x-ndjson")
+		w.WriteHeader(http.StatusOK)
+
+		w.Write([]byte(`{"type": "agent-inference", "id":"test", "value": [{"type":"text","content":"I do not have access to run terminal commands such as bash or read or edit local files. You will need to copy and paste this into your coding assistant."}]}` + "\n"))
+		w.Write([]byte(`{"type": "agent-inference", "id":"test", "value": [], "finishedAt":"2023-01-01T00:00:00Z"}` + "\n"))
+	}))
+	defer ts.Close()
+
+	origBase := NotionAPIBase
+	NotionAPIBase = ts.URL
+	defer func() { NotionAPIBase = origBase }()
+
+	origClient := getChromeHTTPClient
+	getChromeHTTPClient = func(timeout time.Duration) *http.Client {
+		return ts.Client()
+	}
+	defer func() { getChromeHTTPClient = origClient }()
+
+	var buf bytes.Buffer
+	originalOutput := log.Writer()
+	log.SetOutput(&buf)
+	defer log.SetOutput(originalOutput)
+
+	acc := &Account{UserEmail: "test2@test.com"}
+	messages := []ChatMessage{{Role: "user", Content: "test2"}}
+
+	_ = handleAnthropicNonStream(
+		httptest.NewRecorder(), acc, messages, "claude-3-opus", "req_test_2",
+		true, false, false, nil, false, nil, nil, nil,
+	)
+
+	output := buf.String()
+	expectedLogFragment := "[bridge] req_test_2 decision: tool-call refusal explicitly detected"
+	if !strings.Contains(output, expectedLogFragment) {
+		t.Fatalf("expected observability log to contain %q, but got:\n%s", expectedLogFragment, output)
+	}
+}

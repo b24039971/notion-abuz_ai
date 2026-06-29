@@ -2323,7 +2323,7 @@
     },
     {
       "id": "proxy-observability-tool-call-refusal-logging-4964e355",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Ensure tool-call refusal events are logged as bridge decisions",
@@ -2366,6 +2366,23 @@
       ],
       "acceptance": [
         "Code review or tests confirm login error bubbling handles 401 responses cleanly."
+      ]
+    },
+    {
+      "id": "proxy-claude-code-subagent-persona-leakage-coverage-8a12d9c3",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Add transcript fixture for Notion persona leakage in subagent-style prompts",
+      "description": "Ensure that Claude Code subagent-style prompts do not trigger Notion persona leakage or tool-call refusals by adding behavior-level regression tasks for subagent instructions.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_bridge_test.go",
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify that subagent-style prompts correctly parse without triggering identity drift.",
+        "Missing Notion persona leakage triggers are added if needed for subagent prompts."
       ]
     }
   ]
