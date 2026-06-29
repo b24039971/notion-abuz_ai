@@ -1,6 +1,7 @@
 # Binary
 *.exe
 *.exe~
+/notion-manager.exe
 /notion-manager
 /notion-proxy
 /notion-manager-register
