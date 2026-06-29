@@ -841,3 +841,56 @@ func TestSimplifyToolSchemaArrayNested(t *testing.T) {
 		t.Errorf("expected 'anyOf' to be preserved outside of array items")
 	}
 }
+
+func TestCoerceToolArgumentsArray(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "boolean array elements",
+			input:    `{"flags": ["true", "false", "true"]}`,
+			expected: `{"flags":[true,false,true]}`,
+		},
+		{
+			name:     "nested boolean array elements",
+			input:    `{"nested": [["true"], ["false"]]}`,
+			expected: `{"nested":[[true],[false]]}`,
+		},
+		{
+			name:     "no coercion for numbers in array",
+			input:    `{"numbers": ["123", "456"]}`,
+			expected: `{"numbers":["123","456"]}`,
+		},
+		{
+			name:     "mixed types in array",
+			input:    `{"mixed": ["true", "123", "false", {"nested": "true"}]}`,
+			expected: `{"mixed":[true,"123",false,{"nested":true}]}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := coerceToolArguments(json.RawMessage(tt.input))
+
+			// For identical structures but different string serialization (spaces), unmarshal and compare
+			var gotMap, expMap map[string]interface{}
+			if string(got) != tt.expected && tt.expected != "" {
+				errGot := json.Unmarshal(got, &gotMap)
+				errExp := json.Unmarshal([]byte(tt.expected), &expMap)
+				if errGot != nil || errExp != nil {
+					t.Fatalf("failed to unmarshal for deep equal: %v, %v", errGot, errExp)
+				}
+
+				// Using json.Marshal again to ensure deep equality check works across types
+				gotBytes, _ := json.Marshal(gotMap)
+				expBytes, _ := json.Marshal(expMap)
+
+				if string(gotBytes) != string(expBytes) {
+					t.Errorf("expected %s, got %s", string(expBytes), string(gotBytes))
+				}
+			}
+		})
+	}
+}

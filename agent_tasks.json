@@ -2783,7 +2783,7 @@
     },
     {
       "id": "proxy-claude-code-tool-argument-array-coercion-d9a8c1",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Investigate type coercion for tool argument array elements",
