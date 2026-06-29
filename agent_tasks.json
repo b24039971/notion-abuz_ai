@@ -44,6 +44,22 @@
   },
   "tasks": [
     {
+      "id": "dashboard-login-error-toast-coverage-app-tsx-cb13a8e9",
+      "status": "todo",
+      "area": "web",
+      "risk": "low",
+      "title": "Verify dashboard login error toast logic in App.tsx",
+      "description": "Ensure the dashboard login component correctly displays a toast or error state when the API returns a 401 Unauthorized. The LoginPage component is located in App.tsx.",
+      "allowed_paths": [
+        "web/src/App.tsx",
+        "web/src/api.ts",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Code review or tests confirm login error bubbling handles 401 responses cleanly."
+      ]
+    },
+    {
       "id": "proxy-chat-stream-handleframe-invalid-content-block-stop",
       "status": "done",
       "area": "proxy",
@@ -2355,7 +2371,7 @@
     },
     {
       "id": "dashboard-login-error-toast-coverage-ab7fd058",
-      "status": "todo",
+      "status": "blocked",
       "area": "web",
       "risk": "low",
       "title": "Verify dashboard login error toast logic",
@@ -2366,7 +2382,8 @@
       ],
       "acceptance": [
         "Code review or tests confirm login error bubbling handles 401 responses cleanly."
-      ]
+      ],
+      "blocked_reason": "The LoginPage component is located in web/src/App.tsx, which is not included in allowed_paths (web/src/pages/Login.tsx). Cannot modify App.tsx to verify or fix the login error bubbling without violating scope."
     },
     {
       "id": "proxy-claude-code-subagent-persona-leakage-coverage-8a12d9c3",
