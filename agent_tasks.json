@@ -3212,7 +3212,7 @@
     },
     {
       "id": "proxy-claude-code-final-answer-runtime-drift-evaluation",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Enforce identity drift detection for Claude Code final-answer DoneText",
@@ -3225,6 +3225,36 @@
       "acceptance": [
         "The bridge explicitly triggers ErrToolBridgeNoTool if DoneText suffers from identity drift.",
         "Appropriate runtime path logs exist to document this."
+      ]
+    },
+    {
+      "id": "proxy-observability-done-text-drift-logging-metrics",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add metric counters for final-answer identity drift detections",
+      "description": "Currently, drift in DoneText is logged but not tracked in metrics. Add metric counters to observe this behavior natively.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Metric counters correctly increment when final-answer identity drift is detected."
+      ]
+    },
+    {
+      "id": "proxy-observability-done-text-drift-test-coverage",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test coverage for non-stream final-answer identity drift",
+      "description": "Add equivalent coverage in claude_code_final_answer_test.go to verify identity drift detection in the non-stream path.",
+      "allowed_paths": [
+        "internal/proxy/claude_code_final_answer_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Test confirms non-stream handleAnthropicNonStream path correctly returns ErrToolBridgeNoTool for drift."
       ]
     }
   ]

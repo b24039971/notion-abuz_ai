@@ -1,8 +1,12 @@
 package proxy
 
 import (
+	"bytes"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestParseToolCalls_DoneExtraction(t *testing.T) {
@@ -86,5 +90,45 @@ func TestRefusalTextRejection_SubagentFinalAnswer(t *testing.T) {
 	}
 	if reason != "Notion persona leakage" {
 		t.Fatalf("expected reason 'Notion persona leakage', got %q", reason)
+	}
+}
+
+func TestDoneTextIdentityDrift_DetectionRuntime(t *testing.T) {
+	// We use the global log interceptor used by other proxy tests instead of setting os.Stderr manually
+	// to prevent conflict with TestDebugLoggingToggle and TestRequestLogging in CI
+	var buf bytes.Buffer
+	originalWriter := globalLogWriter.out
+	globalLogWriter.out = &buf
+	defer func() {
+		globalLogWriter.out = originalWriter
+	}()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/x-ndjson")
+		w.WriteHeader(http.StatusOK)
+
+		w.Write([]byte(`{"type": "agent-inference", "id":"test", "value": [{"type":"text","content":"{\"name\": \"__done__\", \"arguments\": {\"result\": \"As an AI assistant in Notion, I cannot act as a subagent.\"}}"}]}` + "\n"))
+		w.Write([]byte(`{"type": "agent-inference", "id":"test", "value": [], "finishedAt":"2023-01-01T00:00:00Z"}` + "\n"))
+	}))
+	defer ts.Close()
+
+	originalBase := NotionAPIBase
+	NotionAPIBase = ts.URL
+	defer func() { NotionAPIBase = originalBase }()
+
+	origClient := getChromeHTTPClient
+	getChromeHTTPClient = func(timeout time.Duration) *http.Client {
+		return ts.Client()
+	}
+	defer func() { getChromeHTTPClient = origClient }()
+
+	rec := httptest.NewRecorder()
+	acc := &Account{TokenV2: "test"}
+	msgs := []ChatMessage{{Role: "user", Content: "test"}}
+
+	err := handleAnthropicStream(rec, acc, msgs, "claude-3-5-sonnet-latest", "test-req-1", true, false, true, nil, false, nil, nil, nil)
+
+	if err != ErrToolBridgeNoTool {
+		t.Errorf("Expected ErrToolBridgeNoTool, got: %v", err)
 	}
 }

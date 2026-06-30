@@ -1827,12 +1827,17 @@ func handleAnthropicStream(w http.ResponseWriter, acc *Account, messages []ChatM
 				return ErrToolBridgeNoTool
 			}
 			log.Printf("[bridge] %s decision: missing tool calls (no drift detected, %d chars remaining)", requestID, len(prepared.Remaining))
+		} else if prepared.DoneText != "" {
+			isDoneNoTool, doneDriftReason := detectToolBridgeNoToolResponse(prepared.DoneText)
+			if isDoneNoTool {
+				log.Printf("[bridge] %s decision: final-answer identity drift explicitly detected in DoneText (%d chars, reason: %s), payload: %q, requesting clean retry", requestID, len(prepared.DoneText), doneDriftReason, truncateForLog(prepared.DoneText, 1000))
+				return ErrToolBridgeNoTool
+			}
+			log.Printf("[bridge] %s decision: final-answer extraction", requestID)
 		} else if prepared.HasCalls {
 			log.Printf("[bridge] %s decision: tool calls generated (%d calls)", requestID, len(prepared.ToolCalls))
 		} else if prepared.WebSearchQuery != "" {
 			log.Printf("[bridge] %s decision: WebSearch interception", requestID)
-		} else if prepared.DoneText != "" {
-			log.Printf("[bridge] %s decision: final-answer extraction", requestID)
 		}
 	}
 
@@ -2132,12 +2137,17 @@ func handleAnthropicNonStream(w http.ResponseWriter, acc *Account, messages []Ch
 				return ErrToolBridgeNoTool
 			}
 			log.Printf("[bridge] %s decision: missing tool calls (no drift detected, %d chars remaining)", requestID, len(prepared.Remaining))
+		} else if prepared.DoneText != "" {
+			isDoneNoTool, doneDriftReason := detectToolBridgeNoToolResponse(prepared.DoneText)
+			if isDoneNoTool {
+				log.Printf("[bridge] %s decision: final-answer identity drift explicitly detected in DoneText (%d chars, reason: %s), payload: %q, requesting clean retry", requestID, len(prepared.DoneText), doneDriftReason, truncateForLog(prepared.DoneText, 1000))
+				return ErrToolBridgeNoTool
+			}
+			log.Printf("[bridge] %s decision: final-answer extraction", requestID)
 		} else if prepared.HasCalls {
 			log.Printf("[bridge] %s decision: tool calls generated (%d calls)", requestID, len(prepared.ToolCalls))
 		} else if prepared.WebSearchQuery != "" {
 			log.Printf("[bridge] %s decision: WebSearch interception", requestID)
-		} else if prepared.DoneText != "" {
-			log.Printf("[bridge] %s decision: final-answer extraction", requestID)
 		}
 	}
 
