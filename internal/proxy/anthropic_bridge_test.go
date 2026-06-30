@@ -500,3 +500,46 @@ func TestDetectToolBridgeNoToolResponse_MatchesMCPToolCallRefusal(t *testing.T) 
 		t.Fatalf("expected reason 'tool-call refusal', got %q", reason)
 	}
 }
+
+func TestConvertAnthropicMessages_ToolResultContinuationPreservation(t *testing.T) {
+	msgs := []AnthropicMessage{
+		{
+			Role: "user",
+			Content: []interface{}{
+				map[string]interface{}{"type": "text", "text": "Here is the result of the tool run:"},
+				map[string]interface{}{
+					"type":        "tool_result",
+					"tool_use_id": "call_abc123",
+					"content":     "Hello world from tool",
+				},
+				map[string]interface{}{"type": "text", "text": "\nWhat should we do next?"},
+			},
+		},
+	}
+
+	converted, _ := convertAnthropicMessages(nil, msgs)
+
+	if len(converted) != 2 {
+		t.Fatalf("expected 2 converted messages (tool, user), got %d: %+v", len(converted), converted)
+	}
+
+	// Tool result must have been extracted into its own ChatMessage with Role: "tool"
+	if converted[0].Role != "tool" {
+		t.Errorf("expected msg 0 role to be 'tool', got %q", converted[0].Role)
+	}
+	if converted[0].Content != "Hello world from tool" {
+		t.Errorf("expected msg 0 content to be 'Hello world from tool', got %q", converted[0].Content)
+	}
+	if converted[0].ToolCallID != "call_abc123" {
+		t.Errorf("expected msg 0 tool_call_id to be 'call_abc123', got %q", converted[0].ToolCallID)
+	}
+
+	// The remaining text blocks in the user message should be combined
+	if converted[1].Role != "user" {
+		t.Errorf("expected msg 1 role to be 'user', got %q", converted[1].Role)
+	}
+	expectedText := "Here is the result of the tool run:\nWhat should we do next?"
+	if converted[1].Content != expectedText {
+		t.Errorf("expected msg 1 content to be %q, got %q", expectedText, converted[1].Content)
+	}
+}

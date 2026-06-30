@@ -3121,7 +3121,7 @@
     },
     {
       "id": "proxy-transcript-test-continuation-8a9d",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test case for tool result continuation handling",
@@ -3132,6 +3132,36 @@
       ],
       "acceptance": [
         "Test proves continuation logic correctly preserves tool_result context."
+      ]
+    },
+    {
+      "id": "proxy-observability-tool-call-logging-a3b4",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add observability for native tool call parsing",
+      "description": "Improve diagnostic logging in proxy to trace tool call extraction from Anthropic native NDJSON tool_use.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Logs include explicit markers for NDJSON tool_use parsing."
+      ]
+    },
+    {
+      "id": "proxy-observability-claude-refusal-b2c9",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Enhance logs for complex Claude refusals",
+      "description": "Add detailed internal diagnostic logs when a proxy multi-turn Claude Code tool call refusal is detected.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Diagnostic logs explicitly capture the detected tool call refusal payload."
       ]
     }
   ]
