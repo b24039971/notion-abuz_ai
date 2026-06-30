@@ -1162,7 +1162,7 @@ func buildSessionChainContinuation(messages []ChatMessage, compactList string, c
 	}
 
 	continuationMessage := fmt.Sprintf(
-		"Results from executed function(s):\n%s\n\n%s%sAvailable functions:\n%s- __done__(result: str) — call when no more steps needed\nOutput format: {\"name\": \"function_name\", \"arguments\": {...}}%s\n\nIf these results fully answer the original request, output: {\"name\": \"__done__\", \"arguments\": {\"result\": \"natural language final answer\"}}\nOtherwise output the JSON for the NEXT function call.",
+		"Results from executed function(s):\n%s\n\n%s%sAvailable functions:\n%s- __done__(result: str) — call when no more steps needed\nOutput format: {\"name\": \"function_name\", \"arguments\": {...}}%s\n\nIf these results fully answer the original request, output: {\"name\": \"__done__\", \"arguments\": {\"result\": \"natural language final answer\"}}\nOtherwise output the JSON for the NEXT function call.\nAlways output exactly one JSON object.",
 		results.String(), cwdLine, readGuardLine, compactList, queryContext)
 
 	log.Printf("[bridge] session chain: continuation for partial transcript (%d chars, %d tool results)",

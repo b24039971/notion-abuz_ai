@@ -712,3 +712,25 @@ Available functions:
 		t.Errorf("failed to extract the true original request. got content: %s", content)
 	}
 }
+
+func TestBuildSessionChainContinuation_StrictJSONInstruction(t *testing.T) {
+	messages := []ChatMessage{
+		{Role: "user", Content: "list files in the current directory"},
+		{Role: "assistant", Content: "I'll help with that.", ToolCalls: []ToolCall{
+			{ID: "call_1", Type: "function", Function: ToolCallFunction{Name: "Bash", Arguments: `{"command":"ls"}`}},
+		}},
+		{Role: "tool", ToolCallID: "call_1", Name: "Bash", Content: "file1.txt\nfile2.txt\nREADME.md"},
+	}
+
+	compactList := "- Bash(command: str) — Execute shell command\n"
+	result := buildSessionChainContinuation(messages, compactList, "/home/user/project")
+
+	if len(result) != 1 {
+		t.Fatalf("expected 1 message, got %d", len(result))
+	}
+
+	content := result[0].Content
+	if !strings.Contains(content, "Always output exactly one JSON object.") {
+		t.Errorf("expected strict JSON instruction in continuation, got: %s", content)
+	}
+}

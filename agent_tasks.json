@@ -2965,7 +2965,7 @@
     },
     {
       "id": "proxy-claude-code-json-mode-loss-continuation-a1b2c3",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Investigate JSON mode loss on multi-turn context continuation",
@@ -2977,6 +2977,21 @@
       ],
       "acceptance": [
         "Fix implemented or task blocked with missing offline reproduction details."
+      ]
+    },
+    {
+      "id": "proxy-observability-bridge-decisions-session-multiturn-7b4c91",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add more descriptive logs for session multi-turn fallback",
+      "description": "Improve bridge logging in session fallback scenarios.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Descriptive logging statements added."
       ]
     }
   ]
