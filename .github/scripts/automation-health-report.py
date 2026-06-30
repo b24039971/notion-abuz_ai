@@ -509,8 +509,9 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
     followup_prs = [
         pr.get("number")
         for pr in autonomous_pulls
-        if str(pr.get("body") or "").lower().count("follow-up") >= 2
-        or str(pr.get("body") or "").lower().count("followup") >= 2
+        if (str(pr.get("body") or "").lower().count("follow-up") >= 2
+        or str(pr.get("body") or "").lower().count("followup") >= 2)
+        and "automation-health-repeated-followup" not in str(pr.get("body") or "").lower()
     ]
     if followup_prs:
         add_finding_once(

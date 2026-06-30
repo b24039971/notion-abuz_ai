@@ -154,6 +154,18 @@ class AutomationHealthReportTest(unittest.TestCase):
         self.assertEqual(report["status"], "degraded")
         self.assert_has_finding(report, "github_api_partial_failure")
 
+    def test_repeated_followup_generation_finding(self) -> None:
+        report = run_fixture("repeated-followup-generation")
+
+        self.assertEqual(report["status"], "degraded")
+        self.assert_has_finding(report, "repeated_followup_generation")
+
+    def test_repeated_followup_generation_fix_is_ignored(self) -> None:
+        report = run_fixture("repeated-followup-generation-fix")
+
+        self.assertEqual(report["status"], "healthy")
+        self.assertNotIn("repeated_followup_generation", finding_codes(report))
+
 
 if __name__ == "__main__":
     unittest.main()
