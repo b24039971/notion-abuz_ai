@@ -16,7 +16,7 @@ on:
       health_mode:
         description: "Automation Health recovery mode when no eligible task exists"
         required: false
-        default: "shadow"
+        default: "enforce"
         type: choice
         options:
           - disabled
@@ -45,7 +45,7 @@ jobs:
           GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
           JULES_API_KEY_BACKUP: ${{ secrets.JULES_API_KEY_BACKUP }}
-          RECOVERY_ROUTER_HEALTH_MODE: ${{ inputs.health_mode || vars.RECOVERY_ROUTER_HEALTH_MODE || 'shadow' }}
+          RECOVERY_ROUTER_HEALTH_MODE: ${{ inputs.health_mode || vars.RECOVERY_ROUTER_HEALTH_MODE || 'enforce' }}
         run: |
           set -euo pipefail
           python3 .github/scripts/jules-recovery-router.py \

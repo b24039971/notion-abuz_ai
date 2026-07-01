@@ -33,6 +33,14 @@ ACTIVE_JULES_STATES = {
     "AWAITING_PLAN_APPROVAL",
     "AWAITING_USER_FEEDBACK",
 }
+
+
+def selector_requires_health_recovery(selector: dict[str, Any]) -> bool:
+    reason_code = str(selector.get("reason_code") or "")
+    reason = str(selector.get("reason") or selector.get("error") or "").lower()
+    return reason_code in {"no_todo_tasks", "no_eligible_autonomous_task"} or "no eligible" in reason
+
+
 FINALIZE_MARKERS = (
     "before i wrap up",
     "wrap up my work",
@@ -653,6 +661,77 @@ def plan_recovery_actions(
     ):
         return actions
 
+    selector = state.get("selector") or {}
+    selector_selected = bool(selector.get("selected"))
+    selector_task_id = str(selector.get("task_id") or "")
+
+    if selector_selected:
+        if workflow_recently_created(
+            state,
+            "jules_next_task.yml",
+            now=now,
+            minutes=ACTIVE_NEXT_TASK_COOLDOWN_MINUTES,
+        ):
+            return actions
+        dedupe_key = f"dispatch-next-task:{selector_task_id}"
+        if not action_recently_done(
+            ledger,
+            dedupe_key,
+            now=now,
+            ttl_minutes=ACTIVE_NEXT_TASK_COOLDOWN_MINUTES,
+        ):
+            actions.append(
+                RecoveryAction(
+                    type="dispatch_workflow",
+                    dedupe_key=dedupe_key,
+                    reason=f"No autonomous PR is open and selector picked {selector_task_id}",
+                    ttl_minutes=ACTIVE_NEXT_TASK_COOLDOWN_MINUTES,
+                    payload={
+                        "workflow": "jules_next_task.yml",
+                        "ref": "master",
+                        "inputs": {
+                            "focus": "proxy",
+                            "risk_ceiling": "medium",
+                            "allow_parallel": "false",
+                        },
+                    },
+                )
+            )
+        return actions
+
+    if selector_requires_health_recovery(selector):
+        if health_mode == "disabled" or workflow_recently_created(
+            state,
+            "automation_health.yml",
+            now=now,
+            minutes=HEALTH_ENFORCE_COOLDOWN_MINUTES,
+        ):
+            return actions
+
+        reason = str(selector.get("reason") or selector.get("error") or "selector found no eligible task")
+        workflow_mode = "enforce" if health_mode == "enforce" else "shadow"
+        dedupe_key = f"automation-health-{workflow_mode}:{slug(reason)[:48]}"
+        if not action_recently_done(
+            ledger,
+            dedupe_key,
+            now=now,
+            ttl_minutes=HEALTH_ENFORCE_COOLDOWN_MINUTES,
+        ):
+            actions.append(
+                RecoveryAction(
+                    type="dispatch_workflow",
+                    dedupe_key=dedupe_key,
+                    reason=f"No eligible autonomous task: {reason}",
+                    ttl_minutes=HEALTH_ENFORCE_COOLDOWN_MINUTES,
+                    payload={
+                        "workflow": "automation_health.yml",
+                        "ref": "master",
+                        "inputs": {"mode": workflow_mode},
+                    },
+                )
+            )
+        return actions
+
     if not workflow_in_progress(state, "jules_burst_monitor.yml") and not workflow_recently_created(
         state,
         "jules_unattended_monitor.yml",
@@ -1139,7 +1218,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--health-mode",
         choices=("disabled", "shadow", "enforce"),
-        default=os.environ.get("RECOVERY_ROUTER_HEALTH_MODE", "shadow"),
+        default=os.environ.get("RECOVERY_ROUTER_HEALTH_MODE", "enforce"),
     )
     parser.add_argument("--jules-api-base", default=os.environ.get("JULES_API_BASE", "https://jules.googleapis.com/v1alpha"))
     parser.add_argument("--jules-source", default="")

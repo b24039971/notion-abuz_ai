@@ -223,7 +223,7 @@ class RecoveryRouterTest(unittest.TestCase):
         self.assertEqual(actions[0].type, "rerun_workflow")
         self.assertEqual(actions[0].payload["run_id"], "12345")
 
-    def test_stale_unattended_monitor_is_dispatched_before_new_task(self) -> None:
+    def test_selected_task_beats_stale_unattended_monitor(self) -> None:
         actions = plan(
             state(
                 recent_unattended=False,
@@ -233,7 +233,7 @@ class RecoveryRouterTest(unittest.TestCase):
 
         self.assertEqual(len(actions), 1)
         self.assertEqual(actions[0].type, "dispatch_workflow")
-        self.assertEqual(actions[0].payload["workflow"], "jules_unattended_monitor.yml")
+        self.assertEqual(actions[0].payload["workflow"], "jules_next_task.yml")
 
     def test_idle_selected_task_dispatches_next_task_when_monitor_recent(self) -> None:
         actions = plan(
@@ -352,8 +352,25 @@ class RecoveryRouterTest(unittest.TestCase):
             state(
                 selector={
                     "selected": False,
+                    "reason_code": "no_eligible_autonomous_task",
                     "reason": "no eligible todo task matched the risk ceiling",
                 }
+            )
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].payload["workflow"], "automation_health.yml")
+        self.assertEqual(actions[0].payload["inputs"]["mode"], "enforce")
+
+    def test_no_eligible_task_beats_stale_unattended_monitor(self) -> None:
+        actions = plan(
+            state(
+                recent_unattended=False,
+                selector={
+                    "selected": False,
+                    "reason_code": "no_eligible_autonomous_task",
+                    "reason": "no eligible todo task matched the risk ceiling",
+                },
             )
         )
 
