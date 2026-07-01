@@ -3394,7 +3394,7 @@
     },
     {
       "id": "proxy-observability-notion-persona-leakage-diagnostics",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add diagnostic logging for Notion persona leakage",
@@ -3465,6 +3465,36 @@
       ],
       "acceptance": [
         "Diagnostics correctly track workspace reframing loss."
+      ]
+    },
+    {
+      "id": "proxy-observability-manual-handoff-diagnostics",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add diagnostic logging for manual handoff",
+      "description": "Add explicit diagnostic logging in the proxy for manual handoff when Claude Code asks user to copy and paste.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Diagnostic logs are added for manual handoff."
+      ]
+    },
+    {
+      "id": "proxy-observability-missing-local-tools-diagnostics",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add diagnostic logging for missing local tools",
+      "description": "Add explicit diagnostic logging in the proxy for missing local tools when Claude Code complains about missing bash or edit tools.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Diagnostic logs are added for missing local tools."
       ]
     }
   ]

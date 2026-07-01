@@ -20,6 +20,9 @@ var ErrToolBridgeNoTool = errors.New("tool bridge produced no usable tool action
 var (
 	doneDriftMetricsMu sync.Mutex
 	doneDriftMetrics   = make(map[string]int)
+
+	identityDriftMetricsMu sync.Mutex
+	identityDriftMetrics   = make(map[string]int)
 )
 
 func recordDoneDriftMetric(reason string) {
@@ -28,6 +31,17 @@ func recordDoneDriftMetric(reason string) {
 	count := doneDriftMetrics[reason]
 	doneDriftMetricsMu.Unlock()
 	log.Printf("[metrics] final_answer_drift: %s (total: %d)", reason, count)
+}
+
+func recordIdentityDriftMetric(reason string) {
+	if reason == "" {
+		return
+	}
+	identityDriftMetricsMu.Lock()
+	identityDriftMetrics[reason]++
+	count := identityDriftMetrics[reason]
+	identityDriftMetricsMu.Unlock()
+	log.Printf("[metrics] identity_drift: %s (total: %d)", reason, count)
 }
 
 // citationReplacer is a streaming state machine that replaces Notion's
@@ -1833,6 +1847,7 @@ func handleAnthropicStream(w http.ResponseWriter, acc *Account, messages []ChatM
 		isNoTool, driftReason := detectToolBridgeNoToolResponse(prepared.Remaining)
 		if !actionDetected {
 			if isNoTool {
+				recordIdentityDriftMetric(driftReason)
 				if driftReason == "tool-call refusal" || driftReason == "Notion persona leakage" {
 					log.Printf("[bridge] %s decision: %s explicitly detected (%d chars), payload: %q, requesting clean retry", requestID, driftReason, len(prepared.Remaining), truncateForLog(prepared.Remaining, 1000))
 				} else {
@@ -2144,6 +2159,7 @@ func handleAnthropicNonStream(w http.ResponseWriter, acc *Account, messages []Ch
 		isNoTool, driftReason := detectToolBridgeNoToolResponse(prepared.Remaining)
 		if !actionDetected {
 			if isNoTool {
+				recordIdentityDriftMetric(driftReason)
 				if driftReason == "tool-call refusal" || driftReason == "Notion persona leakage" {
 					log.Printf("[bridge] %s decision: %s explicitly detected (%d chars), payload: %q, requesting clean retry", requestID, driftReason, len(prepared.Remaining), truncateForLog(prepared.Remaining, 1000))
 				} else {

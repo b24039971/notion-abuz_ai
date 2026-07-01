@@ -69,6 +69,10 @@ func TestEnsureNotionPersonaLeakageLoggedAsDecision(t *testing.T) {
 	if !strings.Contains(output, expectedLogFragment) {
 		t.Fatalf("expected observability log to contain %q, but got:\n%s", expectedLogFragment, output)
 	}
+	expectedMetricFragment := "[metrics] identity_drift: Notion persona leakage"
+	if !strings.Contains(output, expectedMetricFragment) {
+		t.Fatalf("expected observability metric log to contain %q, but got:\n%s", expectedMetricFragment, output)
+	}
 }
 
 // Tests that a tool-call refusal payload triggers the exact bridge decision log natively.
