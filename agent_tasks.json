@@ -3371,13 +3371,14 @@
     },
     {
       "id": "automation-health-repeated-followup-generation-2c02a6f3",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Fix automation health finding: repeated_followup_generation",
       "description": "Automation Health reported degraded finding `repeated_followup_generation` in window `current`. Message: Autonomous PRs repeatedly mention follow-up task generation. Evidence: {\"pr_numbers\": [175, 126]}",
       "allowed_paths": [
         "scripts/select_agent_task.py",
+        ".github/scripts/automation-health-report.py",
         ".github/scripts/review-autonomous-pr-quality.py",
         "agent_tasks.json"
       ],
@@ -3449,6 +3450,21 @@
       ],
       "acceptance": [
         "Diagnostic logging is added in the proxy to explicitly track JSON tool-call mode loss."
+      ]
+    },
+    {
+      "id": "proxy-observability-workspace-reframing-diagnostics",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tracking for workspace reframing loss",
+      "description": "Add explicit proxy diagnostic logging when workspace reframing hints are dropped from context.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Diagnostics correctly track workspace reframing loss."
       ]
     }
   ]

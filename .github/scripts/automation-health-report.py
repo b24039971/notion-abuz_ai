@@ -507,12 +507,21 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
             ),
         )
 
+    fenced_code_re = re.compile(r"```.*?```", re.DOTALL)
+    inline_code_re = re.compile(r"`[^`\n]*`")
+    followup_word_re = re.compile(r"(?i)(?<![A-Za-z0-9_])follow-?up(?![A-Za-z0-9_])")
+
+    def repeated_followup_mentions(pr_body: str) -> bool:
+        if "automation-health-repeated-followup" in pr_body.lower():
+            return False
+        without_fenced = fenced_code_re.sub(" ", pr_body)
+        prose_body = inline_code_re.sub(" ", without_fenced)
+        return len(followup_word_re.findall(prose_body)) >= 2
+
     followup_prs = [
         pr.get("number")
         for pr in autonomous_pulls
-        if (str(pr.get("body") or "").lower().count("follow-up") >= 2
-        or str(pr.get("body") or "").lower().count("followup") >= 2)
-        and "automation-health-repeated-followup" not in str(pr.get("body") or "").lower()
+        if repeated_followup_mentions(str(pr.get("body") or ""))
     ]
     if followup_prs:
         add_finding_once(
