@@ -3,6 +3,14 @@ name: Jules Recovery Router
 on:
   schedule:
     - cron: "*/5 * * * *"
+  pull_request_target:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - labeled
+      - unlabeled
+      - ready_for_review
   workflow_dispatch:
     inputs:
       mode:
@@ -36,8 +44,15 @@ concurrency:
 jobs:
   route:
     runs-on: ubuntu-latest
+    if: >-
+      ${{
+        github.event_name != 'pull_request_target' ||
+        github.event.pull_request.head.repo.full_name == github.repository
+      }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Route autonomous recovery
         id: router
