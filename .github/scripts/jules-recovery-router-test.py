@@ -37,11 +37,15 @@ def pr(
     body: str = "",
     comments: list[str] | None = None,
     check_runs: list[dict] | None = None,
+    mergeable: bool | None = True,
+    mergeable_state: str = "clean",
 ) -> dict:
     return {
         "number": number,
         "title": "Autonomous PR",
         "body": body,
+        "mergeable": mergeable,
+        "mergeable_state": mergeable_state,
         "labels": [{"name": label} for label in labels or []],
         "user": {"login": user},
         "head": {
@@ -231,6 +235,86 @@ New task ids:
         )
 
         self.assertEqual(actions, [])
+
+    def test_conflicting_jules_pr_sends_conflict_recovery(self) -> None:
+        actions = plan(
+            state(
+                open_pulls=[
+                    pr(
+                        labels=["jules"],
+                        mergeable=False,
+                        mergeable_state="dirty",
+                    )
+                ]
+            )
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "conflict_recovery")
+        self.assertEqual(actions[0].payload["pr_number"], 10)
+        self.assertTrue(actions[0].payload["comment_needed"])
+        self.assertEqual(actions[0].payload["session_id"], "1234567890123456789")
+        self.assertIn("конфликтует с текущим `master`", actions[0].payload["body"])
+        self.assertIn("не открывай новый PR", actions[0].payload["body"])
+
+    def test_conflicting_quality_fix_pr_prioritizes_branch_sync(self) -> None:
+        quality_comment = """<!-- AUTONOMOUS_QUALITY_FIX_REQUEST pr-level -->
+
+# Autonomous PR quality gate
+
+Status: failed
+
+Blocking reasons:
+- More than one task was marked done.
+"""
+        actions = plan(
+            state(
+                open_pulls=[
+                    pr(
+                        labels=["jules", "needs-quality-fix"],
+                        comments=[quality_comment],
+                        mergeable=False,
+                        mergeable_state="dirty",
+                    )
+                ]
+            )
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "conflict_recovery")
+        self.assertIn("unresolved quality gate details", actions[0].payload["body"])
+        self.assertIn("More than one task was marked done", actions[0].payload["body"])
+
+    def test_conflict_recovery_retries_after_cooldown(self) -> None:
+        marker = "<!-- AUTONOMOUS_RECOVERY_ROUTER action=conflict-recovery sha=abc123 -->"
+        ledger = {
+            "version": 1,
+            "actions": {
+                "conflict-recovery:10:abc123": {
+                    "time": (NOW - timedelta(minutes=31)).isoformat().replace("+00:00", "Z"),
+                    "type": "conflict_recovery",
+                }
+            },
+        }
+
+        actions = plan(
+            state(
+                open_pulls=[
+                    pr(
+                        labels=["jules"],
+                        comments=[marker],
+                        mergeable=False,
+                        mergeable_state="dirty",
+                    )
+                ]
+            ),
+            ledger=ledger,
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "conflict_recovery")
+        self.assertFalse(actions[0].payload["comment_needed"])
+        self.assertEqual(actions[0].ttl_minutes, 30)
 
     def test_missing_jules_label_is_repaired(self) -> None:
         actions = plan(

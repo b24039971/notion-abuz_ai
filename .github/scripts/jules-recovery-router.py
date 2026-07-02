@@ -25,6 +25,7 @@ HEALTH_ENFORCE_COOLDOWN_MINUTES = 20
 RERUN_AUTOMERGE_COOLDOWN_MINUTES = 120
 MONITOR_COOLDOWN_MINUTES = 7
 QUALITY_FIX_RECOVERY_COOLDOWN_MINUTES = 30
+CONFLICT_RECOVERY_COOLDOWN_MINUTES = 30
 MAX_QUALITY_FIX_DETAILS_CHARS = 5000
 STALE_AWAITING_FEEDBACK_MINUTES = 30
 STALE_AWAITING_FEEDBACK_COOLDOWN_MINUTES = 30
@@ -456,6 +457,11 @@ def has_pending_checks(pr: dict[str, Any]) -> bool:
     )
 
 
+def is_conflicting_pr(pr: dict[str, Any]) -> bool:
+    mergeable_state = str(pr.get("mergeable_state") or "").lower()
+    return pr.get("mergeable") is False or mergeable_state == "dirty"
+
+
 def latest_quality_fix_details(pr: dict[str, Any]) -> str:
     for comment in reversed(pr.get("comments", [])):
         body = str(comment.get("body") or "")
@@ -498,6 +504,32 @@ def quality_fix_prompt(pr: dict[str, Any]) -> str:
         "- убери временные scratch-файлы из PR, если они не являются частью acceptance/evidence;\n"
         "- push исправление в эту же PR ветку и дождись повторных checks.\n\n"
         "Не жди ответа пользователя, если действие безопасное и находится внутри scope текущей задачи."
+        f"{details_block}"
+    )
+
+
+def conflict_recovery_prompt(pr: dict[str, Any]) -> str:
+    number = pr.get("number")
+    sha = (pr.get("head") or {}).get("sha") or ""
+    marker = f"<!-- {ROUTER_MARKER} action=conflict-recovery sha={sha} -->"
+    details = latest_quality_fix_details(pr)
+    details_block = ""
+    if details:
+        details_block = (
+            "\n\nУ PR также есть unresolved quality gate details. После синхронизации ветки "
+            "исправь их в этом же PR:\n\n"
+            f"{details}"
+        )
+    return (
+        f"{marker}\n\n"
+        f"Jules, PR #{number} конфликтует с текущим `master`; исправь эту же PR ветку и не открывай новый PR.\n\n"
+        "Что нужно сделать:\n"
+        "- синхронизируй PR branch с последним `master`;\n"
+        "- resolve merge conflicts внутри scope текущей задачи и allowed_paths;\n"
+        "- сохрани один task status/evidence в agent_tasks.json и AUTONOMOUS_TASK_EVIDENCE;\n"
+        "- если конфликт нельзя безопасно решить внутри scope, отметь текущую задачу `blocked` с concrete blocked_reason;\n"
+        "- запусти релевантные проверки и push исправление в эту же PR ветку.\n\n"
+        "Не жди ответа пользователя, если действие безопасное и не требует секретов, production-доступа или destructive changes."
         f"{details_block}"
     )
 
@@ -638,6 +670,35 @@ def plan_recovery_actions(
         sha = str((pr.get("head") or {}).get("sha") or "")
         if "stop-loop" in labels or "human-review" in labels or "no-automerge" in labels:
             continue
+
+        if is_conflicting_pr(pr):
+            dedupe_key = f"conflict-recovery:{number}:{sha}"
+            marker = f"{ROUTER_MARKER} action=conflict-recovery sha={sha}"
+            has_marker = comments_contain(pr, marker)
+            if not action_recently_done(
+                ledger,
+                dedupe_key,
+                now=now,
+                ttl_minutes=CONFLICT_RECOVERY_COOLDOWN_MINUTES,
+            ) and (
+                not has_marker or extract_session_id_from_pr(pr)
+            ):
+                prompt = conflict_recovery_prompt(pr)
+                actions.append(
+                    RecoveryAction(
+                        type="conflict_recovery",
+                        dedupe_key=dedupe_key,
+                        reason=f"PR #{number} is dirty/conflicting with master",
+                        ttl_minutes=CONFLICT_RECOVERY_COOLDOWN_MINUTES,
+                        payload={
+                            "pr_number": number,
+                            "body": prompt,
+                            "comment_needed": not has_marker,
+                            "session_id": extract_session_id_from_pr(pr),
+                        },
+                    )
+                )
+            return actions
 
         if "needs-quality-fix" in labels:
             if has_pending_checks(pr):
@@ -1180,7 +1241,7 @@ def execute_action(
 ) -> None:
     payload = action.payload
     jules_clients = jules_clients or []
-    if action.type == "quality_fix_recovery":
+    if action.type in {"quality_fix_recovery", "conflict_recovery"}:
         if payload.get("comment_needed", True):
             client.request(
                 "POST",
@@ -1191,7 +1252,7 @@ def execute_action(
         session_id = str(payload.get("session_id") or "")
         if session_id:
             if not jules_clients:
-                raise RuntimeError("Jules API keys are required for quality_fix_recovery sendMessage")
+                raise RuntimeError(f"Jules API keys are required for {action.type} sendMessage")
             jules_request_any(
                 jules_clients,
                 "POST",
