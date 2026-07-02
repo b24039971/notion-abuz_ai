@@ -36,6 +36,7 @@ GITHUB_API_MAX_READ_ATTEMPTS = 3
 MAX_HTTP_ERROR_DETAIL_CHARS = 1200
 PULL_DETAIL_MERGEABILITY_ATTEMPTS = 2
 PULL_DETAIL_MERGEABILITY_DELAY_SECONDS = 1
+GIT_CONFLICT_FALLBACK_DEPTH = "2000"
 SESSION_ID_RE = re.compile(r"(?<!\d)(\d{12,})(?!\d)")
 AUTONOMOUS_CONTINUE_TOKEN = "AUTONOMOUS_CONTINUE_TOKEN"
 ACTIVE_JULES_STATES = {
@@ -436,7 +437,15 @@ def enrich_open_pull_git_conflicts(open_pulls: list[dict[str, Any]], *, repo: st
 
         remote_ref = f"refs/remotes/origin/{head_ref}"
         fetch = subprocess.run(
-            ["git", "fetch", "--no-tags", "--depth=1", "origin", f"{head_ref}:{remote_ref}"],
+            [
+                "git",
+                "fetch",
+                "--no-tags",
+                f"--depth={GIT_CONFLICT_FALLBACK_DEPTH}",
+                "origin",
+                "master:refs/remotes/origin/master",
+                f"{head_ref}:{remote_ref}",
+            ],
             check=False,
             capture_output=True,
             text=True,
@@ -460,6 +469,12 @@ def enrich_open_pull_git_conflicts(open_pulls: list[dict[str, Any]], *, repo: st
             pr["mergeable"] = False
             pr["mergeable_state"] = "dirty"
             pr["mergeability_source"] = "git-merge-tree"
+        elif merge.returncode != 0:
+            print(
+                f"Could not compute git conflict fallback for PR branch {head_ref}: "
+                f"{merge_output.strip()}",
+                file=sys.stderr,
+            )
 
 
 def action_recently_done(

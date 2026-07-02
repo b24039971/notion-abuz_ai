@@ -282,6 +282,10 @@ class RecoveryRouterTest(unittest.TestCase):
             router.enrich_open_pull_git_conflicts(open_pulls, repo=REPO)
 
         self.assertEqual(run.call_count, 2)
+        fetch_cmd = run.call_args_list[0].args[0]
+        self.assertIn("--depth=2000", fetch_cmd)
+        self.assertIn("master:refs/remotes/origin/master", fetch_cmd)
+        self.assertIn("jules/task-1234567890123456789:refs/remotes/origin/jules/task-1234567890123456789", fetch_cmd)
         self.assertFalse(open_pulls[0]["mergeable"])
         self.assertEqual(open_pulls[0]["mergeable_state"], "dirty")
         self.assertEqual(open_pulls[0]["mergeability_source"], "git-merge-tree")
