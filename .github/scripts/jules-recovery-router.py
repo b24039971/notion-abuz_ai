@@ -24,6 +24,7 @@ ACTIVE_NEXT_TASK_COOLDOWN_MINUTES = 10
 HEALTH_ENFORCE_COOLDOWN_MINUTES = 20
 RERUN_AUTOMERGE_COOLDOWN_MINUTES = 120
 MONITOR_COOLDOWN_MINUTES = 7
+QUALITY_FIX_RECOVERY_COOLDOWN_MINUTES = 30
 MAX_QUALITY_FIX_DETAILS_CHARS = 5000
 STALE_AWAITING_FEEDBACK_MINUTES = 30
 STALE_AWAITING_FEEDBACK_COOLDOWN_MINUTES = 30
@@ -644,7 +645,12 @@ def plan_recovery_actions(
             dedupe_key = f"quality-fix:{number}:{sha}"
             marker = f"{ROUTER_MARKER} action=quality-fix sha={sha}"
             has_marker = comments_contain(pr, marker)
-            if not action_recently_done(ledger, dedupe_key, now=now, ttl_minutes=7 * 24 * 60) and (
+            if not action_recently_done(
+                ledger,
+                dedupe_key,
+                now=now,
+                ttl_minutes=QUALITY_FIX_RECOVERY_COOLDOWN_MINUTES,
+            ) and (
                 not has_marker or extract_session_id_from_pr(pr)
             ):
                 prompt = quality_fix_prompt(pr)
@@ -653,7 +659,7 @@ def plan_recovery_actions(
                         type="quality_fix_recovery",
                         dedupe_key=dedupe_key,
                         reason=f"PR #{number} has unresolved needs-quality-fix",
-                        ttl_minutes=7 * 24 * 60,
+                        ttl_minutes=QUALITY_FIX_RECOVERY_COOLDOWN_MINUTES,
                         payload={
                             "pr_number": number,
                             "body": prompt,

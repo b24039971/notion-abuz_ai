@@ -196,6 +196,28 @@ New task ids:
         self.assertFalse(actions[0].payload["comment_needed"])
         self.assertEqual(actions[0].payload["session_id"], "1234567890123456789")
 
+    def test_quality_fix_recovery_retries_after_cooldown(self) -> None:
+        marker = "<!-- AUTONOMOUS_RECOVERY_ROUTER action=quality-fix sha=abc123 -->"
+        ledger = {
+            "version": 1,
+            "actions": {
+                "quality-fix:10:abc123": {
+                    "time": (NOW - timedelta(minutes=31)).isoformat().replace("+00:00", "Z"),
+                    "type": "quality_fix_recovery",
+                }
+            },
+        }
+
+        actions = plan(
+            state(open_pulls=[pr(labels=["jules", "needs-quality-fix"], comments=[marker])]),
+            ledger=ledger,
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "quality_fix_recovery")
+        self.assertFalse(actions[0].payload["comment_needed"])
+        self.assertEqual(actions[0].ttl_minutes, 30)
+
     def test_quality_fix_waits_for_pending_checks_on_new_head(self) -> None:
         actions = plan(
             state(
