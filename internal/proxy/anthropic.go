@@ -1124,6 +1124,20 @@ func HandleAnthropicMessages(pool *AccountPool) http.HandlerFunc {
 				}
 			}
 
+			if !isResearcher && !isFirstTurn && hasTools && session != nil && session.TurnCount >= 5 {
+				lastUserIdx := -1
+				for i := len(requestMessages) - 1; i >= 0; i-- {
+					if requestMessages[i].Role == "user" {
+						lastUserIdx = i
+						break
+					}
+				}
+				if lastUserIdx != -1 {
+					requestMessages[lastUserIdx].Content += "\n\nReminder: You are in a tool-call loop. Always output exactly one JSON object."
+					log.Printf("[session] diagnostic: injected JSON tool-call mode retention reminder for extended multi-turn session (TurnCount: %d)", session.TurnCount)
+				}
+			}
+
 			// For first turn, pre-create session with generated IDs
 			var currentSession *Session
 			if !isResearcher {

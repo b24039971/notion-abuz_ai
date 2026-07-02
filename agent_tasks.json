@@ -3718,7 +3718,7 @@
     },
     {
       "id": "proxy-behavior-json-mode-loss-multi-turn",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Ensure JSON tool-call mode retention across long multi-turn sessions",
