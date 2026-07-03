@@ -4209,7 +4209,7 @@
     },
     {
       "id": "proxy-behavior-ensure-session-recovery-keeps-tool-results",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "medium",
       "title": "Ensure session recovery prompt correctly re-embeds recent tool results",
@@ -4220,7 +4220,8 @@
       ],
       "acceptance": [
         "Session recovery logic correctly captures tool results directly following the last user message."
-      ]
+      ],
+      "blocked_reason": "Paused after repeated Jules FAILED sessions: 6317149265037147857, 14353144615461886170. Resume only with human review or concrete live smoke/transcript/CI/offline reproduction evidence."
     },
     {
       "id": "proxy-observability-track-empty-inference",
