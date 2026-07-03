@@ -210,6 +210,7 @@ func buildCompactToolList(tools []Tool) string {
 		if t.Function.Description != "" {
 			desc := t.Function.Description
 			if len([]rune(desc)) > 80 {
+				recordContextLossMetric("compact_tool_list_truncated")
 				desc = string([]rune(desc)[:80]) + "..."
 			}
 			sb.WriteString(fmt.Sprintf(" — %s", desc))
@@ -239,6 +240,7 @@ func simplifySchemaNode(schema interface{}, inArrayItems bool) interface{} {
 			case "description":
 				if s, ok := val.(string); ok {
 					if len([]rune(s)) > 200 {
+						recordContextLossMetric("tool_schema_truncated")
 						out[key] = string([]rune(s)[:197]) + "..."
 						log.Printf("[bridge] diagnostics: simplifyToolSchema truncated large description to prevent token bloat")
 					} else {
@@ -756,6 +758,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 						needsReadNarrowing = true
 					}
 					if len([]rune(content)) > 800 {
+						recordContextLossMetric("legacy_collapse_truncated")
 						content = string([]rune(content)[:800]) + "..."
 					}
 					if lastRoundResults.Len() > 0 {
@@ -811,6 +814,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 				if m.Role == "assistant" && strings.Contains(m.Content, "---\nSources:") {
 					ctx := m.Content
 					if len([]rune(ctx)) > 600 {
+						recordContextLossMetric("search_context_truncated")
 						ctx = string([]rune(ctx)[:600]) + "..."
 					}
 					prevSearchContext = ctx
@@ -1296,6 +1300,7 @@ func buildSessionChainContinuation(messages []ChatMessage, compactList string, c
 
 			// For very long queries, just take the first part
 			if len([]rune(originalQuery)) > 300 {
+				recordContextLossMetric("original_query_truncated")
 				originalQuery = string([]rune(originalQuery)[:297]) + "..."
 			}
 			break

@@ -230,6 +230,7 @@ func computeSessionFingerprintWithSalt(messages []ChatMessage, stableSalt string
 		if m.Role == "system" {
 			content := normalizeSessionSystemContent(m.Content)
 			if len([]rune(content)) > 200 {
+				recordContextLossMetric("fingerprint_system_truncated")
 				content = string([]rune(content)[:200])
 			}
 			h.Write([]byte(content))
@@ -241,6 +242,7 @@ func computeSessionFingerprintWithSalt(messages []ChatMessage, stableSalt string
 		if isMeaningfulUserMessage(m) {
 			content := normalizeSessionUserContent(m.Content)
 			if len([]rune(content)) > 200 {
+				recordContextLossMetric("fingerprint_user_truncated")
 				content = string([]rune(content)[:200])
 			}
 			h.Write([]byte(content))
@@ -370,6 +372,8 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 			recordContextLossMetric("system_instruction_truncated")
 		} else if strings.HasPrefix(label, "Tool") {
 			recordContextLossMetric("tool_result_truncated")
+		} else {
+			recordContextLossMetric("history_entry_truncated")
 		}
 
 		if limit < 50 {

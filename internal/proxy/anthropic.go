@@ -2421,6 +2421,7 @@ func truncateForLog(s string, maxRunes int) string {
 	runes := 0
 	for i := range s {
 		if runes == maxRunes {
+			recordContextLossMetric("log_truncation")
 			return s[:i] + "..."
 		}
 		runes++

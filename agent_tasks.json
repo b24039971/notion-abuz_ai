@@ -4193,7 +4193,7 @@
     },
     {
       "id": "proxy-observability-record-context-truncation",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Emit diagnostic log on excessive context truncation",
@@ -4319,6 +4319,21 @@
       "acceptance": [
         "A sync.Mutex protected metric map tracks occurrences where a block was attempted in fallback but yielded 0 valid tool calls.",
         "A diagnostic log explicitly mentions unparseable fallback candidates."
+      ]
+    },
+    {
+      "id": "proxy-observability-record-tool-schema-fallback",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Track fallback to empty schema on invalid tool schemas",
+      "description": "When simplifySchemaNode encounters fundamentally invalid structures or deeply recursive ones that it skips, it should log and emit metrics about tool schema fallback/simplification failures to track tool schema compatibility issues.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A metric counter tracks specific cases where tool schemas are altered or dropped due to invalid structures."
       ]
     }
   ]
