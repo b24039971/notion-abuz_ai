@@ -3958,7 +3958,7 @@
     },
     {
       "id": "proxy-behavior-diagnostics-xml-regex-array-metrics-2",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Evaluate tool choice impact on XML wrapper format",
@@ -4144,6 +4144,21 @@
       ],
       "acceptance": [
         "A test case simulating tool mode loss and verifying metrics is added."
+      ]
+    },
+    {
+      "id": "proxy-behavior-tool-choice-mode-tracking-fallback",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Ensure consistent tool choice mode tracking across all parsers",
+      "description": "While tracking is added to the XML and Markdown array fallbacks, we should ensure we track when tool choices fail and drop back into string matching or bracket extraction modes, to provide an even fuller diagnostic picture of Anthropic model behavior.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Metrics correctly include toolChoiceMode for robust bracket extraction."
       ]
     }
   ]

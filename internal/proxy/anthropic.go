@@ -522,7 +522,7 @@ type preparedToolBridgeResponse struct {
 	HasCalls       bool
 }
 
-func prepareToolBridgeResponse(content string, nativeToolUses []AgentValueEntry) preparedToolBridgeResponse {
+func prepareToolBridgeResponse(content string, nativeToolUses []AgentValueEntry, toolChoiceMode ...string) preparedToolBridgeResponse {
 	prepared := preparedToolBridgeResponse{}
 
 	if len(nativeToolUses) > 0 {
@@ -531,7 +531,7 @@ func prepareToolBridgeResponse(content string, nativeToolUses []AgentValueEntry)
 		prepared.Remaining = content
 	}
 	if !prepared.HasCalls {
-		prepared.ToolCalls, prepared.Remaining, prepared.HasCalls = parseToolCalls(content)
+		prepared.ToolCalls, prepared.Remaining, prepared.HasCalls = parseToolCalls(content, toolChoiceMode...)
 	}
 
 	if prepared.HasCalls {
@@ -1931,7 +1931,7 @@ func handleAnthropicStream(w http.ResponseWriter, acc *Account, messages []ChatM
 
 	var prepared preparedToolBridgeResponse
 	if hasTools {
-		prepared = prepareToolBridgeResponse(contentStr, nativeToolUses)
+		prepared = prepareToolBridgeResponse(contentStr, nativeToolUses, callOpts.ToolChoiceMode)
 		actionDetected := prepared.HasCalls || prepared.WebSearchQuery != "" || prepared.DoneText != ""
 		isNoTool, driftReason := detectToolBridgeNoToolResponse(prepared.Remaining)
 
@@ -2245,7 +2245,7 @@ func handleAnthropicNonStream(w http.ResponseWriter, acc *Account, messages []Ch
 
 	var prepared preparedToolBridgeResponse
 	if hasTools {
-		prepared = prepareToolBridgeResponse(content, nativeToolUses)
+		prepared = prepareToolBridgeResponse(content, nativeToolUses, callOpts.ToolChoiceMode)
 		actionDetected := prepared.HasCalls || prepared.WebSearchQuery != "" || prepared.DoneText != ""
 		isNoTool, driftReason := detectToolBridgeNoToolResponse(prepared.Remaining)
 

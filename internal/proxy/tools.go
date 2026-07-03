@@ -38,12 +38,16 @@ func recordToolCallMetric(name string) {
 	log.Printf("[metrics] tool_call: %s (total: %d)", name, count)
 }
 
-func recordXMLArrayMetric(wrapperType string) {
+func recordXMLArrayMetric(wrapperType string, toolChoiceMode ...string) {
 	xmlArrayMetricsMu.Lock()
-	xmlArrayMetrics[wrapperType]++
-	count := xmlArrayMetrics[wrapperType]
+	key := wrapperType
+	if len(toolChoiceMode) > 0 && toolChoiceMode[0] != "" {
+		key = wrapperType + "_mode_" + toolChoiceMode[0]
+	}
+	xmlArrayMetrics[key]++
+	count := xmlArrayMetrics[key]
 	xmlArrayMetricsMu.Unlock()
-	log.Printf("[metrics] xml_tool_array_fallback: %s (total: %d)", wrapperType, count)
+	log.Printf("[metrics] xml_tool_array_fallback: %s (total: %d)", key, count)
 }
 
 // ──────────────────────────────────────────────────────────────────
@@ -1406,21 +1410,21 @@ var jsonToolCallRegex = regexp.MustCompile(`(?s)\{"tool_call"\s*:\s*(\{.*?\})\s*
 
 // parseToolCalls extracts tool calls from model response text (fallback when native tool_use not available).
 // Returns (toolCalls, remainingText, hasToolCalls)
-func parseToolCalls(content string) ([]ToolCall, string, bool) {
+func parseToolCalls(content string, toolChoiceMode ...string) ([]ToolCall, string, bool) {
 	var toolCalls []ToolCall
 	remaining := content
 
 	// Method 1: <tool_call>{...}</tool_call> XML format (preferred)
 	xmlMatches := toolCallXMLRegex.FindAllStringSubmatch(content, -1)
 	for i, match := range xmlMatches {
-		tcs := parseToolCallJSONList(match[1], i)
+		tcs := parseToolCallJSONList(match[1], i, toolChoiceMode...)
 		if len(tcs) > 0 {
 			remaining = strings.Replace(remaining, match[0], "", 1)
 			toolCalls = append(toolCalls, tcs...)
 		}
 	}
 	if len(toolCalls) > 0 {
-		log.Printf("[bridge] diagnostics: JSON tool-call mode loss explicitly tracked (fallback to markdown fences, %d calls extracted)", len(toolCalls))
+		log.Printf("[bridge] diagnostics: JSON tool-call mode loss explicitly tracked (fallback to XML wrapper, %d calls extracted)", len(toolCalls))
 		return toolCalls, strings.TrimSpace(remaining), true
 	}
 
@@ -1429,13 +1433,14 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 	mdMatches := mdFenceRegex.FindAllStringSubmatch(content, -1)
 	for i, match := range mdMatches {
 		fenced := strings.TrimSpace(match[1])
-		tcs := parseToolCallJSONList(fenced, i)
+		tcs := parseToolCallJSONList(fenced, i, toolChoiceMode...)
 		if len(tcs) > 0 {
 			toolCalls = append(toolCalls, tcs...)
 			remaining = strings.Replace(remaining, match[0], "", 1)
 		}
 	}
 	if len(toolCalls) > 0 {
+		log.Printf("[bridge] diagnostics: JSON tool-call mode loss explicitly tracked (fallback to markdown fences, %d calls extracted)", len(toolCalls))
 		return toolCalls, strings.TrimSpace(remaining), true
 	}
 
@@ -1615,6 +1620,15 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 
 	if len(toolCalls) > 0 {
 		log.Printf("[bridge] robust JSON extraction: successfully extracted %d tool calls from unfenced multi-line output", len(toolCalls))
+
+		mode := ""
+		if len(toolChoiceMode) > 0 && toolChoiceMode[0] != "" {
+			mode = "_mode_" + toolChoiceMode[0]
+		}
+
+		key := "robust_extraction_fallback" + mode
+		recordToolModeLossMetric(key)
+
 		log.Printf("[bridge] diagnostics: JSON tool-call mode loss explicitly tracked (robust extraction fallback, %d calls extracted)", len(toolCalls))
 		return toolCalls, strings.TrimSpace(remainingBuilder.String()), true
 	}
@@ -1622,7 +1636,7 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 	return nil, content, false
 }
 
-func parseToolCallJSONList(jsonStr string, index int) []ToolCall {
+func parseToolCallJSONList(jsonStr string, index int, toolChoiceMode ...string) []ToolCall {
 	var arrayCall []struct {
 		Name      string          `json:"name"`
 		Arguments json.RawMessage `json:"arguments"`
@@ -1667,7 +1681,7 @@ func parseToolCallJSONList(jsonStr string, index int) []ToolCall {
 			}
 		}
 		if len(calls) > 0 {
-			recordXMLArrayMetric("direct_array")
+			recordXMLArrayMetric("direct_array", toolChoiceMode...)
 			log.Printf("[bridge] diagnostics: JSON tool-call mode loss explicitly tracked (fallback to XML tool arrays, %d calls extracted)", len(calls))
 			log.Printf("[bridge] successfully extracted %d tool calls from JSON array format", len(calls))
 			return calls
@@ -1706,7 +1720,7 @@ func parseToolCallJSONList(jsonStr string, index int) []ToolCall {
 			}
 		}
 		if len(calls) > 0 {
-			recordXMLArrayMetric("wrapper_array")
+			recordXMLArrayMetric("wrapper_array", toolChoiceMode...)
 			log.Printf("[bridge] diagnostics: JSON tool-call mode loss explicitly tracked (fallback to XML tool wrapper arrays, %d calls extracted)", len(calls))
 			log.Printf("[bridge] successfully extracted %d tool calls from JSON wrapper array format", len(calls))
 			return calls

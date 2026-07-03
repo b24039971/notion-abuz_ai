@@ -246,6 +246,7 @@ type CallOptions struct {
 	ThinkingBlocks        *[]ThinkingBlock
 	EnableWebSearch       bool                  // force useWebSearch=true in Notion config
 	EnableWorkspaceSearch *bool                 // override workspace search (nil = use config default)
+	ToolChoiceMode        string                // tool_choice mode passed from request
 	UseReadOnlyMode       bool                  // ASK mode — Notion's workflow useReadOnlyMode=true (model answers but skips edits)
 	Attachments           []UploadedAttachment  // uploaded file attachments to include in transcript
 	IsResearcher          bool                  // researcher mode (deep research)
