@@ -3943,7 +3943,7 @@
     },
     {
       "id": "proxy-behavior-diagnostics-xml-regex-array-metrics",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add explicit metrics for XML tool call array parsing",
@@ -4097,6 +4097,22 @@
       ],
       "acceptance": [
         "Diagnostic log covers skipped tool result entries during trailing history traversal."
+      ]
+    },
+    {
+      "id": "proxy-behavior-multi-turn-fallback-truncation",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Investigate string truncation limits for large file dumps in multi-turn fallback",
+      "description": "Large files dumped in tool result output inside multi-turn proxy chains can get abruptly truncated by `clip()` in `session.go`. Investigate the exact truncation sizes, identify how it impacts tool continuation (when tool output > limit), and explicitly diagnose dropped `[truncated]` lines by increasing observability logging when this happens.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Diagnostic logs are added for session truncation in multi-turn fallbacks.",
+        "Metrics for large string clipping occurrences are exported."
       ]
     }
   ]

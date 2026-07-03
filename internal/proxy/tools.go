@@ -14,6 +14,9 @@ import (
 var (
 	toolCallMetricsMu sync.Mutex
 	toolCallMetrics   = make(map[string]int)
+
+	xmlArrayMetricsMu sync.Mutex
+	xmlArrayMetrics   = make(map[string]int)
 )
 
 func recordToolCallMetric(name string) {
@@ -22,6 +25,14 @@ func recordToolCallMetric(name string) {
 	count := toolCallMetrics[name]
 	toolCallMetricsMu.Unlock()
 	log.Printf("[metrics] tool_call: %s (total: %d)", name, count)
+}
+
+func recordXMLArrayMetric(wrapperType string) {
+	xmlArrayMetricsMu.Lock()
+	xmlArrayMetrics[wrapperType]++
+	count := xmlArrayMetrics[wrapperType]
+	xmlArrayMetricsMu.Unlock()
+	log.Printf("[metrics] xml_tool_array_fallback: %s (total: %d)", wrapperType, count)
 }
 
 // ──────────────────────────────────────────────────────────────────
@@ -1639,6 +1650,8 @@ func parseToolCallJSONList(jsonStr string, index int) []ToolCall {
 			}
 		}
 		if len(calls) > 0 {
+			recordXMLArrayMetric("direct_array")
+			log.Printf("[bridge] diagnostics: JSON tool-call mode loss explicitly tracked (fallback to XML tool arrays, %d calls extracted)", len(calls))
 			log.Printf("[bridge] successfully extracted %d tool calls from JSON array format", len(calls))
 			return calls
 		}
@@ -1676,6 +1689,8 @@ func parseToolCallJSONList(jsonStr string, index int) []ToolCall {
 			}
 		}
 		if len(calls) > 0 {
+			recordXMLArrayMetric("wrapper_array")
+			log.Printf("[bridge] diagnostics: JSON tool-call mode loss explicitly tracked (fallback to XML tool wrapper arrays, %d calls extracted)", len(calls))
 			log.Printf("[bridge] successfully extracted %d tool calls from JSON wrapper array format", len(calls))
 			return calls
 		}
