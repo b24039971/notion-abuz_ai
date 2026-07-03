@@ -1668,59 +1668,62 @@ func parseToolCalls(content string, toolChoiceMode ...string) ([]ToolCall, strin
 }
 
 func parseToolCallJSONList(jsonStr string, index int, toolChoiceMode ...string) []ToolCall {
-	var arrayCall []struct {
-		Name      string          `json:"name"`
-		Arguments json.RawMessage `json:"arguments"`
-		ToolCall  *struct {
-			Name      string          `json:"name"`
-			Arguments json.RawMessage `json:"arguments"`
-		} `json:"tool_call"`
-		ToolCalls []struct {
-			Name      string          `json:"name"`
-			Arguments json.RawMessage `json:"arguments"`
-		} `json:"tool_calls"`
-	}
-	if err := json.Unmarshal([]byte(jsonStr), &arrayCall); err == nil && len(arrayCall) > 0 {
+	var rawArray []json.RawMessage
+	if err := json.Unmarshal([]byte(jsonStr), &rawArray); err == nil && len(rawArray) > 0 {
 		var calls []ToolCall
-		for j, call := range arrayCall {
-			type Entry struct {
-				Name string
-				Args json.RawMessage
+		for j, rawItem := range rawArray {
+			var call struct {
+				Name      string          `json:"name"`
+				Arguments json.RawMessage `json:"arguments"`
+				ToolCall  *struct {
+					Name      string          `json:"name"`
+					Arguments json.RawMessage `json:"arguments"`
+				} `json:"tool_call"`
+				ToolCalls []struct {
+					Name      string          `json:"name"`
+					Arguments json.RawMessage `json:"arguments"`
+				} `json:"tool_calls"`
 			}
-			var entries []Entry
-
-			if call.Name != "" {
-				entries = append(entries, Entry{call.Name, call.Arguments})
-			} else if call.ToolCall != nil && call.ToolCall.Name != "" {
-				entries = append(entries, Entry{call.ToolCall.Name, call.ToolCall.Arguments})
-			} else if len(call.ToolCalls) > 0 {
-				for _, tc := range call.ToolCalls {
-					if tc.Name != "" {
-						entries = append(entries, Entry{tc.Name, tc.Arguments})
-					}
+			if unmarshalErr := json.Unmarshal(rawItem, &call); unmarshalErr == nil {
+				type Entry struct {
+					Name string
+					Args json.RawMessage
 				}
-			}
+				var entries []Entry
 
-			for k, entry := range entries {
-				argsStr := "{}"
-				if json.Valid(entry.Args) {
-					coercedArgs := coerceToolArguments(entry.Args)
-					var parsed interface{}
-					if err := json.Unmarshal(coercedArgs, &parsed); err == nil {
-						if _, isMap := parsed.(map[string]interface{}); isMap || (parsed == nil && string(coercedArgs) == "null") {
-							argsStr = string(coercedArgs)
+				if call.Name != "" {
+					entries = append(entries, Entry{call.Name, call.Arguments})
+				} else if call.ToolCall != nil && call.ToolCall.Name != "" {
+					entries = append(entries, Entry{call.ToolCall.Name, call.ToolCall.Arguments})
+				} else if len(call.ToolCalls) > 0 {
+					for _, tc := range call.ToolCalls {
+						if tc.Name != "" {
+							entries = append(entries, Entry{tc.Name, tc.Arguments})
 						}
 					}
 				}
-				recordToolCallMetric(entry.Name)
-				calls = append(calls, ToolCall{
-					ID:   fmt.Sprintf("call_%d_%d_%d_%s", index, j, k, generateUUIDv4()[:8]),
-					Type: "function",
-					Function: ToolCallFunction{
-						Name:      entry.Name,
-						Arguments: argsStr,
-					},
-				})
+
+				for k, entry := range entries {
+					argsStr := "{}"
+					if json.Valid(entry.Args) {
+						coercedArgs := coerceToolArguments(entry.Args)
+						var parsed interface{}
+						if err := json.Unmarshal(coercedArgs, &parsed); err == nil {
+							if _, isMap := parsed.(map[string]interface{}); isMap || (parsed == nil && string(coercedArgs) == "null") {
+								argsStr = string(coercedArgs)
+							}
+						}
+					}
+					recordToolCallMetric(entry.Name)
+					calls = append(calls, ToolCall{
+						ID:   fmt.Sprintf("call_%d_%d_%d_%s", index, j, k, generateUUIDv4()[:8]),
+						Type: "function",
+						Function: ToolCallFunction{
+							Name:      entry.Name,
+							Arguments: argsStr,
+						},
+					})
+				}
 			}
 		}
 		if len(calls) > 0 {
@@ -1732,14 +1735,8 @@ func parseToolCallJSONList(jsonStr string, index int, toolChoiceMode ...string) 
 	}
 
 	var wrapperArray struct {
-		ToolCall []struct {
-			Name      string          `json:"name"`
-			Arguments json.RawMessage `json:"arguments"`
-		} `json:"tool_call"`
-		ToolCalls []struct {
-			Name      string          `json:"name"`
-			Arguments json.RawMessage `json:"arguments"`
-		} `json:"tool_calls"`
+		ToolCall  []json.RawMessage `json:"tool_call"`
+		ToolCalls []json.RawMessage `json:"tool_calls"`
 	}
 	if err := json.Unmarshal([]byte(jsonStr), &wrapperArray); err == nil {
 		type ExtractedCall struct {
@@ -1748,12 +1745,19 @@ func parseToolCallJSONList(jsonStr string, index int, toolChoiceMode ...string) 
 		}
 		var extracted []ExtractedCall
 
+		var items []json.RawMessage
 		if len(wrapperArray.ToolCall) > 0 {
-			for _, tc := range wrapperArray.ToolCall {
-				extracted = append(extracted, ExtractedCall{tc.Name, tc.Arguments})
-			}
+			items = wrapperArray.ToolCall
 		} else if len(wrapperArray.ToolCalls) > 0 {
-			for _, tc := range wrapperArray.ToolCalls {
+			items = wrapperArray.ToolCalls
+		}
+
+		for _, item := range items {
+			var tc struct {
+				Name      string          `json:"name"`
+				Arguments json.RawMessage `json:"arguments"`
+			}
+			if unmarshalErr := json.Unmarshal(item, &tc); unmarshalErr == nil && tc.Name != "" {
 				extracted = append(extracted, ExtractedCall{tc.Name, tc.Arguments})
 			}
 		}

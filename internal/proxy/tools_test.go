@@ -478,6 +478,26 @@ func TestParseToolCalls_JSON_Array_AdvancedEdgeCases(t *testing.T) {
 				`{"command": "pwd"}`,
 			},
 		},
+		{
+			name:      "array with malformed elements safely skipped",
+			content:   "Here is my response:\n```json\n[\n  {\"name\": \"Write\", \"arguments\": {\"path\": \"ok.txt\"}},\n  {\"tool_call\": \"invalid string because model lost mode\"},\n  {\"tool_call\": {\"name\": \"Bash\", \"arguments\": {\"command\": \"ls\"}}},\n  {\"broken\": }\n]\n```",
+			wantCalls: 2,
+			wantNames: []string{"Write", "Bash"},
+			wantArgs: []string{
+				`{"path": "ok.txt"}`,
+				`{"command": "ls"}`,
+			},
+		},
+		{
+			name:      "wrapper array with malformed string skipped",
+			content:   "Here is the array:\n```json\n{\"tool_calls\": [\n  {\"name\": \"Read\", \"arguments\": {\"path\": \"a.txt\"}},\n  \"a malformed hallucinated string instead of an object\",\n  {\"name\": \"Grep\", \"arguments\": {\"pattern\": \"foo\"}}\n]}\n```",
+			wantCalls: 2,
+			wantNames: []string{"Read", "Grep"},
+			wantArgs: []string{
+				`{"path": "a.txt"}`,
+				`{"pattern": "foo"}`,
+			},
+		},
 	}
 
 	for _, tt := range tests {

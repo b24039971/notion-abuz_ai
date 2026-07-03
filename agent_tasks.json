@@ -4273,7 +4273,7 @@
     },
     {
       "id": "proxy-resilience-robust-array-fallback-edge-cases",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Ensure fallback array parsing safely skips malformed embedded structures",
@@ -4286,6 +4286,23 @@
       "acceptance": [
         "parseToolCallJSONList properly ignores elements that lack name and arguments without crashing or losing sibling tool calls.",
         "Add a relevant fallback test case with malformed objects."
+      ]
+    },
+    {
+      "id": "proxy-resilience-robust-extraction-json-nested",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Ensure robust extraction handles nested brackets carefully",
+      "description": "During fallback parsing in `parseToolCalls` (Method 2), if the payload contains unbalanced brackets inside string literals, ensure the robust bracket counting logic safely skips or recovers rather than corrupting extraction for sibling calls.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Add test case to verify robust bracket counting in strings containing nested braces",
+        "Update parser logic if it breaks on unbalanced strings in fallback mode."
       ]
     }
   ]
