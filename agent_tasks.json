@@ -4163,7 +4163,7 @@
     },
     {
       "id": "proxy-observability-log-tool-call-refusals",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Improve diagnostic logging for tool call refusals",
@@ -4237,6 +4237,23 @@
       ],
       "acceptance": [
         "Metric counter tracks empty response events."
+      ]
+    },
+    {
+      "id": "proxy-observability-log-session-fallback-rates",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Track fallback rates from multi-turn session mode to legcay collapse mode",
+      "description": "Add a diagnostic metric to explicitly track how often the proxy drops out of the accurate multi-turn session tracking and falls back to the legacy message-collapse logic in buildTranscript, so we can quantify how much context Claude Code is losing.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A sync.Mutex protected metric map specifically records occurrences of session chain legacy fallbacks.",
+        "The metric increments when `chain: falling back from session to legacy collapse` logging executes."
       ]
     }
   ]

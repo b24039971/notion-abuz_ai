@@ -2,8 +2,10 @@ package proxy
 
 import (
 	"bytes"
+	"log"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -342,5 +344,47 @@ func TestAnthropicTrimCitationContext_Malformed(t *testing.T) {
 		if len(origRunes) <= 320 && res != tc {
 			t.Errorf("Expected string %q to be unchanged, got %q", tc, res)
 		}
+	}
+}
+
+func TestRecordToolCallRefusalMetric(t *testing.T) {
+	toolCallRefusalMetricsMu.Lock()
+	toolCallRefusalMetrics = make(map[string]int)
+	toolCallRefusalMetricsMu.Unlock()
+
+	var wg sync.WaitGroup
+	var buf bytes.Buffer
+	originalOutput := log.Writer()
+	log.SetOutput(&buf)
+	defer log.SetOutput(originalOutput)
+
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			recordToolCallRefusalMetric("tool-call refusal")
+			recordToolCallRefusalMetric("manual handoff")
+			recordToolCallRefusalMetric("Notion persona leakage")
+		}(i)
+	}
+
+	wg.Wait()
+
+	toolCallRefusalMetricsMu.Lock()
+	defer toolCallRefusalMetricsMu.Unlock()
+
+	if toolCallRefusalMetrics["tool-call refusal"] != 100 {
+		t.Errorf("Expected 100 for 'tool-call refusal', got %d", toolCallRefusalMetrics["tool-call refusal"])
+	}
+	if toolCallRefusalMetrics["manual handoff"] != 100 {
+		t.Errorf("Expected 100 for 'manual handoff', got %d", toolCallRefusalMetrics["manual handoff"])
+	}
+	if toolCallRefusalMetrics["Notion persona leakage"] != 100 {
+		t.Errorf("Expected 100 for 'Notion persona leakage', got %d", toolCallRefusalMetrics["Notion persona leakage"])
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "tool_call_refusal: tool-call refusal") {
+		t.Errorf("Expected log to contain 'tool_call_refusal: tool-call refusal'")
 	}
 }
