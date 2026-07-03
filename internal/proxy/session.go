@@ -154,7 +154,19 @@ func normalizeSessionUserContent(content string) string {
 }
 
 func isMeaningfulUserMessage(msg ChatMessage) bool {
-	return msg.Role == "user" && msg.ToolCallID == "" && normalizeSessionUserContent(msg.Content) != ""
+	if msg.Role != "user" || msg.ToolCallID != "" {
+		return false
+	}
+	content := normalizeSessionUserContent(msg.Content)
+	if content == "" {
+		return false
+	}
+
+	// Skip multi-turn continuation wrappers so we anchor to the actual user query
+	if strings.HasPrefix(content, "Here is the result of the tool run:") || strings.HasPrefix(content, "Results from executed function(s):") {
+		return false
+	}
+	return true
 }
 
 func shouldCountNonSystemMessage(msg ChatMessage) bool {
@@ -277,11 +289,11 @@ func needsFreshThreadRecovery(messages []ChatMessage) bool {
 			break
 		}
 	}
-	if lastUserIdx <= 0 {
+	if lastUserIdx < 0 {
 		return false
 	}
-	for i := 0; i < lastUserIdx; i++ {
-		if shouldCountNonSystemMessage(messages[i]) {
+	for i := 0; i < len(messages); i++ {
+		if i != lastUserIdx && shouldCountNonSystemMessage(messages[i]) {
 			return true
 		}
 	}

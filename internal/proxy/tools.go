@@ -685,9 +685,12 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 			userQueryIdx := -1
 			for i := len(messages) - 1; i >= 0; i-- {
 				if messages[i].Role == "user" && messages[i].ToolCallID == "" {
-					userQuery = messages[i].Content
-					userQueryIdx = i
-					break
+					content := strings.TrimSpace(messages[i].Content)
+					if !strings.HasPrefix(content, "Here is the result of the tool run:") && !strings.HasPrefix(content, "Results from executed function(s):") {
+						userQuery = messages[i].Content
+						userQueryIdx = i
+						break
+					}
 				}
 			}
 			// Collect tool results only from the CURRENT chain (after userQueryIdx).

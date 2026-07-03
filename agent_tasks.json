@@ -3836,7 +3836,7 @@
     },
     {
       "id": "proxy-behavior-anthropic-tool-result-continuation-strictness",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Strict preservation of tool results during multi-turn handoffs",
@@ -3969,6 +3969,22 @@
       ],
       "acceptance": [
         "Diagnostics logged for array vs object wrapper ratios depending on tool choice mode."
+      ]
+    },
+    {
+      "id": "proxy-behavior-missing-context-error-resilience",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Improve resilience against missing-context API errors",
+      "description": "Add logic to detect generic API errors complaining about missing tool context or malformed history from Anthropic and fall back safely.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Error responses matching known missing-context patterns trigger a clean fallback instead of crashing or leaking to user."
       ]
     }
   ]
