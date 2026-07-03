@@ -196,3 +196,41 @@ func TestBuildRecoveryMessages_MultiTurnTool(t *testing.T) {
 		t.Errorf("Recovered message missing tool result. Content:\n%s", content)
 	}
 }
+
+func TestBuildRecoveryMessages_TruncatesLargeToolResult(t *testing.T) {
+	// Create a very large tool result
+	var largeResult strings.Builder
+	largeResult.WriteString("=== SEARCH START ===\n")
+	for i := 0; i < 1000; i++ {
+		largeResult.WriteString("this is some content from the file that should be truncated\n")
+	}
+	largeResult.WriteString("=== SEARCH END ===\n")
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "Start"},
+		{Role: "assistant", Content: "Ok"},
+		{Role: "user", Content: "Search for something"},
+		{Role: "assistant", Content: "I will search.", ToolCalls: []ToolCall{{ID: "call_1", Function: ToolCallFunction{Name: "Search", Arguments: "{}"}}}},
+		{Role: "tool", Name: "Search", Content: largeResult.String()},
+	}
+
+	recovered := buildFreshThreadRecoveryMessages(messages)
+
+	if len(recovered) != 1 {
+		t.Fatalf("expected 1 recovered message, got %d", len(recovered))
+	}
+
+	content := recovered[0].Content
+
+	if !strings.Contains(content, "=== SEARCH START ===") {
+		t.Errorf("Recovered message missing tool result start boundary.")
+	}
+
+	if !strings.Contains(content, "=== SEARCH END ===") {
+		t.Errorf("Recovered message missing tool result end boundary. Truncation lost critical context.")
+	}
+
+	if !strings.Contains(content, "...[truncated]...") {
+		t.Errorf("Recovered message missing truncation marker.")
+	}
+}

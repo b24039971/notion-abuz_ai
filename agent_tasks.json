@@ -3925,7 +3925,7 @@
     },
     {
       "id": "proxy-behavior-live-smoke-tool-result-truncation",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Investigate tool result truncation during long session recovery",

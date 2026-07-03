@@ -325,7 +325,18 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 		if limit <= 0 || len([]rune(s)) <= limit {
 			return s
 		}
-		return string([]rune(s)[:limit]) + "..."
+		if limit < 50 {
+			return string([]rune(s)[:limit]) + "..."
+		}
+
+		headLimit := limit / 2
+		tailLimit := limit - headLimit - 25
+
+		runes := []rune(s)
+		head := string(runes[:headLimit])
+		tail := string(runes[len(runes)-tailLimit:])
+
+		return head + "\n\n...[truncated]...\n\n" + tail
 	}
 
 	var systemParts []string
