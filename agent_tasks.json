@@ -4338,7 +4338,7 @@
     },
     {
       "id": "proxy-observability-track-context-loss-multi-turn-tool-results",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tracking for dropped tool results during session multi-turn legacy fallback",
@@ -4349,6 +4349,36 @@
       ],
       "acceptance": [
         "A metric counter tracks ignored/dropped tool results during multi-turn mismatch."
+      ]
+    },
+    {
+      "id": "proxy-observability-legacy-collapse-dropped-search-context",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tracking for dropped search context during multi-turn legacy fallback",
+      "description": "Track when search results (which might exceed limits) are explicitly ignored during legacy multi-turn tracking in `buildTranscript`.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A metric counter tracks ignored/dropped search contexts during multi-turn mismatch."
+      ]
+    },
+    {
+      "id": "proxy-observability-detect-system-prompt-drift",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add metric tracking for system prompt drifting",
+      "description": "Log an observable metric when the user prompt exceeds typical size boundaries without hitting Notion limits, causing truncation drop behavior.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A counter logs the occurrences where system prompt logic exceeds its constraints."
       ]
     }
   ]

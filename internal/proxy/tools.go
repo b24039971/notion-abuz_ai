@@ -747,6 +747,9 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 				}
 			}
 			for i, m := range messages {
+				if m.Role == "tool" && i <= userQueryIdx {
+					recordContextLossMetric("legacy_collapse_dropped_tool_result")
+				}
 				if m.Role != "tool" || i <= userQueryIdx {
 					continue // skip results from previous queries
 				}

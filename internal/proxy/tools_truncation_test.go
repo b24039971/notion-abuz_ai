@@ -60,3 +60,39 @@ func TestClaudeCodeAgentLoop_ToolResultContinuationMultibyteTruncation(t *testin
 	// Since we are truncating by rune, it shouldn't. If we were truncating by byte, it might.
 	// The `[]rune` trick in Go prevents invalid UTF-8 generation anyway, but let's test it runs fine.
 }
+
+func TestLegacyCollapseDroppedToolResultMetric(t *testing.T) {
+	// Reset metrics before test
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	tools := []Tool{
+		{Function: ToolFunction{Name: "ToolA"}},
+		{Function: ToolFunction{Name: "ToolB"}},
+		{Function: ToolFunction{Name: "ToolC"}},
+		{Function: ToolFunction{Name: "ToolD"}},
+		{Function: ToolFunction{Name: "ToolE"}},
+		{Function: ToolFunction{Name: "ToolF"}},
+	}
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "Query 1"},
+		{Role: "assistant", ToolCalls: []ToolCall{{ID: "1", Function: ToolCallFunction{Name: "ToolA"}}}},
+		{Role: "tool", Content: "Result 1", ToolCallID: "1"}, // This should be dropped because it's before the last user query
+		{Role: "user", Content: "Query 2"},
+		{Role: "assistant", ToolCalls: []ToolCall{{ID: "2", Function: ToolCallFunction{Name: "ToolB"}}}},
+		{Role: "tool", Content: "Result 2", ToolCallID: "2"}, // This is the final tool result to trigger chain continuation
+	}
+
+	// Force format-based injection which hits legacy collapse (large toolset + chain continuation + no session)
+	_ = injectToolsIntoMessages(messages, tools, "claude-3-5-sonnet-20241022", nil)
+
+	contextLossMetricsMu.Lock()
+	count := contextLossMetrics["legacy_collapse_dropped_tool_result"]
+	contextLossMetricsMu.Unlock()
+
+	if count != 1 {
+		t.Errorf("Expected 1 dropped tool result metric, got %d", count)
+	}
+}
