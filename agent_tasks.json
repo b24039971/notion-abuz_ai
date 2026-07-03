@@ -3749,7 +3749,7 @@
     },
     {
       "id": "proxy-behavior-session-recovery-truncation-check",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add session recovery truncation diagnostics",
@@ -4065,6 +4065,23 @@
       ],
       "acceptance": [
         "Diagnostic logging added when lastAssistantIdx == -1 in buildSessionChainContinuation."
+      ]
+    },
+    {
+      "id": "proxy-observability-bridge-context-loss",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add bridge context loss observability",
+      "description": "Improve observability for when tool execution context or system instructions are lost during Claude Code bridge session handoffs due to aggressive clipping.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/session_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Log events are generated when important tool results are dropped during session handoff.",
+        "Tests verify context preservation metrics."
       ]
     }
   ]

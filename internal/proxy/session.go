@@ -333,18 +333,21 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 		}
 	}
 
-	clip := func(s string, limit int) string {
-		if limit <= 0 || len([]rune(s)) <= limit {
+	clip := func(s string, limit int, label string) string {
+		runes := []rune(s)
+		if limit <= 0 || len(runes) <= limit {
 			return s
 		}
+
+		log.Printf("[bridge] diagnostic: session recovery truncated %s context (original: %d chars, limit: %d chars)", label, len(runes), limit)
+
 		if limit < 50 {
-			return string([]rune(s)[:limit]) + "..."
+			return string(runes[:limit]) + "..."
 		}
 
 		headLimit := limit / 2
 		tailLimit := limit - headLimit - 25
 
-		runes := []rune(s)
 		head := string(runes[:headLimit])
 		tail := string(runes[len(runes)-tailLimit:])
 
@@ -403,9 +406,10 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 			continue
 		}
 
-		content = clip(content, maxEntryChars)
+		content = clip(content, maxEntryChars, label)
 		entryCost := len(label) + len(content) + 4
 		if usedChars > 0 && usedChars+entryCost > maxHistoryChars {
+			log.Printf("[bridge] diagnostic: session recovery truncated conversation history (used %d chars, dropping oldest entries)", usedChars)
 			break
 		}
 		usedChars += entryCost
@@ -476,7 +480,7 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 			continue
 		}
 
-		content = clip(content, maxEntryChars)
+		content = clip(content, maxEntryChars, label)
 		trailingReversed = append(trailingReversed, historyEntry{label: label, content: content})
 	}
 
@@ -499,7 +503,7 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 
 	if len(systemParts) > 0 {
 		prompt.WriteString("\n\nSystem instructions:\n")
-		prompt.WriteString(clip(strings.Join(systemParts, "\n\n"), maxSystemChars))
+		prompt.WriteString(clip(strings.Join(systemParts, "\n\n"), maxSystemChars, "system"))
 	}
 
 	if history.Len() > 0 {
