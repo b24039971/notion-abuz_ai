@@ -4627,7 +4627,7 @@
     },
     {
       "id": "proxy-observability-track-large-tool-result-fallbacks",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Track large tool result fallbacks",
@@ -4734,6 +4734,36 @@
       "acceptance": [
         "Test coverage for session recovery is improved with more edge cases.",
         "No existing behavior is broken."
+      ]
+    },
+    {
+      "id": "proxy-observability-track-large-search-context-truncation",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Track large search context truncation",
+      "description": "Add explicit metrics for when previous search contexts exceed the limit and are truncated.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A context loss metric is recorded when large search contexts are truncated."
+      ]
+    },
+    {
+      "id": "proxy-observability-track-failed-assistant-anchor-mismatch",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Track missing assistant anchor during fallback",
+      "description": "Add explicit metrics when session fallback fails to find the anchor assistant message.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A fallback tracking metric logs missing anchor occurrences."
       ]
     }
   ]

@@ -795,9 +795,13 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 					if name == "Read" && strings.Contains(content, "exceeds maximum allowed tokens") {
 						needsReadNarrowing = true
 					}
-					if len([]rune(content)) > 800 {
+					runes := []rune(content)
+					if len(runes) > 800 {
+						dropped := string(runes[800:])
+						droppedLines := strings.Count(dropped, "\n")
+						log.Printf("[bridge] diagnostic: legacy collapse truncated %s output (original: %d chars, limit: 800 chars, dropped %d lines)", name, len(runes), droppedLines)
 						recordContextLossMetric("legacy_collapse_truncated")
-						content = string([]rune(content)[:800]) + "..."
+						content = string(runes[:800]) + "..."
 					}
 					if lastRoundResults.Len() > 0 {
 						lastRoundResults.WriteString("\n")
