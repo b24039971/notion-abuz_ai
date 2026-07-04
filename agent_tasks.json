@@ -4658,7 +4658,7 @@
     },
     {
       "id": "proxy-tools-track-legacy-collapse",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Track legacy collapse dropped search context",

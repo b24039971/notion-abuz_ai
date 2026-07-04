@@ -780,12 +780,10 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 				if m.Role == "tool" && i <= userQueryIdx {
 					recordContextLossMetric("legacy_collapse_dropped_tool_result")
 				}
-				// The dropped search context might not have ---\nSources: or the userQueryIdx logic might be different. Let's see what is printed here.
 				if m.Role == "assistant" && i <= userQueryIdx && strings.Contains(m.Content, "---\nSources:") {
 					recordContextLossMetric("legacy_collapse_dropped_search_context")
+					log.Printf("[bridge] legacy collapse: dropped search context (len=%d) from earlier turn", len(m.Content))
 				}
-
-				// Keep track of search context if needed, but for now we just log it
 
 				if m.Role != "tool" || i <= userQueryIdx {
 					continue // skip results from previous queries
