@@ -213,3 +213,39 @@ func TestBuildRecoveryMessages_ContextLoss_EmptyEntry(t *testing.T) {
 		t.Errorf("Expected context loss metric for recovery_empty_entry_dropped, got: %s", logOutput)
 	}
 }
+func TestBuildRecoveryMessages_ContextLoss_LatestUserMessage(t *testing.T) {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "Original query"},
+		{Role: "assistant", Content: "ack"},
+		{Role: "user", Content: strings.Repeat("a", 8500)}, // Exceeds 8000
+	}
+
+	buildFreshThreadRecoveryMessages(messages)
+
+	logOutput := buf.String()
+	if !strings.Contains(logOutput, "[metrics] context_loss: latest_user_message_truncated") {
+		t.Errorf("Expected context loss metric for latest user message truncation, got: %s", logOutput)
+	}
+}
+func TestBuildRecoveryMessages_ContextLoss_HistoryEntry(t *testing.T) {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "Original query"},
+		{Role: "assistant", Content: strings.Repeat("b", 1500)}, // Exceeds maxEntryChars (900)
+		{Role: "user", Content: "Latest query"},
+	}
+
+	buildFreshThreadRecoveryMessages(messages)
+
+	logOutput := buf.String()
+	if !strings.Contains(logOutput, "[metrics] context_loss: history_entry_truncated") {
+		t.Errorf("Expected context loss metric for history entry truncation, got: %s", logOutput)
+	}
+}

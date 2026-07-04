@@ -368,15 +368,17 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 		}
 		log.Printf("[bridge] diagnostic: session recovery truncated %s context (original: %d chars, limit: %d chars, dropped %d lines)", label, len(runes), limit, droppedLines)
 
+		var reason string
 		if label == "system" {
-			recordContextLossMetric("system_instruction_truncated")
+			reason = "system_instruction_truncated"
 		} else if label == "User (latest)" {
-			recordContextLossMetric("latest_user_message_truncated")
+			reason = "latest_user_message_truncated"
 		} else if strings.HasPrefix(label, "Tool") {
-			recordContextLossMetric("tool_result_truncated")
+			reason = "tool_result_truncated"
 		} else {
-			recordContextLossMetric("history_entry_truncated")
+			reason = "history_entry_truncated"
 		}
+		recordContextLossMetric(reason)
 
 		if limit < 50 {
 			return string(runes[:limit]) + "..."

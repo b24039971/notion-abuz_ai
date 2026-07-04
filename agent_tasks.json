@@ -4706,7 +4706,7 @@
     },
     {
       "id": "proxy-session-clip-truncation",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Track session clip truncation",
@@ -4718,6 +4718,22 @@
       ],
       "acceptance": [
         "Context truncation in clip is logged with metrics."
+      ]
+    },
+    {
+      "id": "proxy-session-recovery-coverage",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Improve session recovery test coverage",
+      "description": "Add more test cases for session recovery edge cases to prevent regressions.",
+      "allowed_paths": [
+        "internal/proxy/session_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Test coverage for session recovery is improved with more edge cases.",
+        "No existing behavior is broken."
       ]
     }
   ]
