@@ -4795,6 +4795,29 @@
       "acceptance": [
         "A test validates that search_context_truncated is not incremented for normal/short search context."
       ]
+    },
+    {
+      "id": "automation-health-no-eligible-autonomous-task-e587fcdb",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Fix automation health finding: no_eligible_autonomous_task",
+      "description": "Automation Health reported degraded finding `no_eligible_autonomous_task` in window `current`. Message: Todo tasks exist, but none are eligible under risk ceiling and micro-task policy. Evidence: {\"eligible_count\": 0, \"reason\": \"no eligible todo task matched the risk ceiling and micro-task policy\", \"rejected_count\": 5, \"rejected_task_ids\": [\"proxy-diagnose-multi-turn-tool-loss-reason-followup-test\", \"proxy-observability-detect-system-message-dropped-regex-match2\", \"proxy-session-recovery-coverage\", \"proxy-observability-track-large-search-context-truncation-followup\", \"proxy-observability-search-context-truncation-metrics-followup\"], \"todo_count\": 5}",
+      "allowed_paths": [
+        "scripts/select_agent_task.py",
+        ".github/scripts/automation-health-report.py",
+        ".github/scripts/create-automation-meta-task-pr.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Root cause for Automation Health finding `no_eligible_autonomous_task` is identified using automation-health artifacts, CI checks, Jules session data, or manifest evidence.",
+        "The implementation fixes the automation issue or blocks this task with a concrete blocked_reason naming missing evidence, permissions, or external API instability.",
+        "A follow-up Automation Health run no longer reports `no_eligible_autonomous_task`, or the PR body explains why the finding is intentionally tolerated."
+      ],
+      "health_finding_hash": "e587fcdbecfd",
+      "health_finding_code": "no_eligible_autonomous_task",
+      "health_finding_severity": "degraded",
+      "health_report_generated_at": "2026-07-04T22:10:02Z"
     }
   ]
 }
