@@ -251,7 +251,7 @@ func simplifySchemaNode(schema interface{}, inArrayItems bool) interface{} {
 				}
 			case "items":
 				out[key] = simplifySchemaNode(val, true)
-			case "$ref", "anyOf", "allOf", "oneOf":
+			case "$ref", "anyOf", "allOf", "oneOf", "properties", "additionalProperties", "patternProperties":
 				if inArrayItems {
 					// Drop complex nested structures inside array items to prevent token bloat
 					recordContextLossMetric("tool_schema_simplification_fallback")

@@ -4415,7 +4415,7 @@
     },
     {
       "id": "proxy-observability-record-context-loss-reason-details",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Track additional failure modes for context loss metrics",
@@ -4471,6 +4471,22 @@
       ],
       "acceptance": [
         "A counter tracks occurrences where empty wrapper-only user messages are explicitly dropped from the proxy request."
+      ]
+    },
+    {
+      "id": "proxy-observability-detect-system-schema-recursion",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tracking for unbounded schema depth in simplification",
+      "description": "Ensure there is a hard maximum recursion depth for schema parsing to prevent potential panics from deeply recursive structures outside of the known edge cases.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A counter tracks and breaks out of recursion if depth exceeds a safe limit (e.g. 100)."
       ]
     }
   ]
