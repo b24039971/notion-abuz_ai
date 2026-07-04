@@ -4400,7 +4400,7 @@
     },
     {
       "id": "proxy-resilience-robust-extraction-json-multiline",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Ensure fallback extraction correctly ignores isolated brackets on empty lines",

@@ -1439,3 +1439,57 @@ func TestSimplifyToolSchema_ComplexArrayFallback(t *testing.T) {
 		t.Errorf("expected empty schema fallback, got %v", itemsMap)
 	}
 }
+
+func TestParseToolCalls_RobustBracketCountingIsolatedBrackets(t *testing.T) {
+	content := `Some previous text that has an isolated bracket:
+}
+
+Another isolated bracket:
+]
+
+And then the real tool call:
+{"name": "the_tool", "arguments": {"valid": true}}
+`
+
+	calls, _, isFallback := parseToolCalls(content)
+	if !isFallback {
+		t.Error("Expected fallback mode to be triggered")
+	}
+
+	if len(calls) != 1 {
+		t.Fatalf("Expected 1 call, got %d", len(calls))
+	}
+
+	if calls[0].Function.Name != "the_tool" {
+		t.Errorf("Expected name 'the_tool', got '%s'", calls[0].Function.Name)
+	}
+
+}
+
+func TestParseToolCalls_RobustBracketCountingIsolatedBracketBeforeValid(t *testing.T) {
+	content := `
+{
+  "some_output": "this is perfectly balanced but not a tool call"
+}
+
+Then an isolated bracket
+}
+
+And the valid tool call:
+{"name": "real_tool", "arguments": {}}
+`
+
+	calls, _, isFallback := parseToolCalls(content)
+	if !isFallback {
+		t.Error("Expected fallback mode to be triggered")
+	}
+
+	if len(calls) != 1 {
+		t.Fatalf("Expected 1 call, got %d", len(calls))
+	}
+
+	if calls[0].Function.Name != "real_tool" {
+		t.Errorf("Expected name 'real_tool', got '%s'", calls[0].Function.Name)
+	}
+
+}

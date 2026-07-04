@@ -1676,9 +1676,7 @@ func parseToolCalls(content string, toolChoiceMode ...string) ([]ToolCall, strin
 								i = j + 1
 							}
 						}
-						if found {
-							break // whether it was a tool call or not, we reached the end of the balanced object that started at i
-						}
+						break // whether it was a tool call or not, we reached the end of the balanced object that started at i
 					}
 				}
 			}
