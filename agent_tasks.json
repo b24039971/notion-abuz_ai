@@ -4552,7 +4552,7 @@
     },
     {
       "id": "proxy-observability-detect-suggestion-mode-trigger",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tracking for suggestion mode trigger in proxy layer",
@@ -4608,6 +4608,21 @@
       ],
       "acceptance": [
         "A test explicitly validates the counter increment for search_context_truncated when a long search context is truncated during legacy collapse or session continuation."
+      ]
+    },
+    {
+      "id": "proxy-tools-validate-search-tool-injection",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Validate search tool injection handles large responses",
+      "description": "Ensure search tool injection gracefully handles very large responses by truncating when necessary.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A metric or log exists to confirm graceful handling of large search context injections."
       ]
     }
   ]

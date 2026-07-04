@@ -1682,3 +1682,34 @@ func TestInjectToolsIntoMessages_DropsEmptyWrapperUserMessage(t *testing.T) {
 		t.Errorf("Expected empty_wrapper_user_message_dropped to be recorded once, got %d", count)
 	}
 }
+
+func TestInjectToolsIntoMessages_SuggestionModeMetric(t *testing.T) {
+	// Reset the metric map
+	toolModeLossMetricsMu.Lock()
+	toolModeLossMetrics = make(map[string]int)
+	toolModeLossMetricsMu.Unlock()
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "[SUGGESTION MODE: Predict what the user will do next]"},
+	}
+
+	// Make len(tools) > 5 to trigger useLargeToolSet and thus reach SUGGESTION MODE branch
+	tools := []Tool{
+		{Type: "function", Function: ToolFunction{Name: "Tool1"}},
+		{Type: "function", Function: ToolFunction{Name: "Tool2"}},
+		{Type: "function", Function: ToolFunction{Name: "Tool3"}},
+		{Type: "function", Function: ToolFunction{Name: "Tool4"}},
+		{Type: "function", Function: ToolFunction{Name: "Tool5"}},
+		{Type: "function", Function: ToolFunction{Name: "Tool6"}},
+	}
+
+	injectToolsIntoMessages(messages, tools, "claude-3-opus-20240229", nil)
+
+	toolModeLossMetricsMu.Lock()
+	count := toolModeLossMetrics["suggestion_mode_trigger"]
+	toolModeLossMetricsMu.Unlock()
+
+	if count != 1 {
+		t.Fatalf("Expected 1 suggestion_mode_trigger metric, got %d", count)
+	}
+}

@@ -678,6 +678,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 		// SUGGESTION MODE: no tool injection needed
 		if lastUserIdx >= 0 && isSuggestionMode(messages[lastUserIdx].Content) {
 			log.Printf("[bridge] SUGGESTION MODE detected — skipping tool injection")
+			recordToolModeLossMetric("suggestion_mode_trigger")
 			return messages
 		}
 
