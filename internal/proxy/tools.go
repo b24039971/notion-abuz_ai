@@ -658,6 +658,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 				}
 			} else if m.Role == "user" && strings.TrimSpace(m.Content) == "" && m.ToolCallID == "" && len(m.ToolCalls) == 0 {
 				log.Printf("[bridge] dropped empty wrapper-only user message after sanitization")
+				recordContextLossMetric("empty_wrapper_user_message_dropped")
 			} else {
 				filtered = append(filtered, m)
 			}

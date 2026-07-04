@@ -4460,7 +4460,7 @@
     },
     {
       "id": "proxy-observability-detect-empty-wrapper-only-user-message-dropped",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tracking for dropped empty wrapper-only user message in proxy layer",
@@ -4533,6 +4533,36 @@
       ],
       "acceptance": [
         "A counter tracks occurrences where expected user messages are missing."
+      ]
+    },
+    {
+      "id": "proxy-observability-detect-system-message-dropped-regex-match",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tracking for dropped system message based on regex match",
+      "description": "Log an observable metric when a system message is dropped due to regex matching during CWD extraction.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A counter tracks occurrences where system messages are explicitly dropped after extracting CWD using regex."
+      ]
+    },
+    {
+      "id": "proxy-observability-detect-suggestion-mode-trigger",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tracking for suggestion mode trigger in proxy layer",
+      "description": "Log an observable metric when suggestion mode is triggered and tool injection is skipped.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A counter tracks occurrences where SUGGESTION MODE is detected and tool injection is skipped."
       ]
     }
   ]

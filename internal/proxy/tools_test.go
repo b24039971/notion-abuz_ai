@@ -1627,3 +1627,58 @@ func TestSessionChainContinuation_SearchContext(t *testing.T) {
 		t.Errorf("Expected search_context_truncated metric to be 1, got %d", count)
 	}
 }
+
+func TestInjectToolsIntoMessages_DropsEmptyWrapperUserMessage(t *testing.T) {
+	// Reset metrics carefully, though it is package level, tests run sequentially in proxy package.
+	contextLossMetricsMu.Lock()
+	original := contextLossMetrics
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	t.Cleanup(func() {
+		contextLossMetricsMu.Lock()
+		contextLossMetrics = original
+		contextLossMetricsMu.Unlock()
+	})
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "<system-reminder>\nReminder to be a good agent\n</system-reminder>"},
+		{Role: "assistant", Content: "Hello"},
+	}
+
+	tools := make([]Tool, 6)
+	for i := 0; i < 6; i++ {
+		tools[i] = Tool{
+			Type: "function",
+			Function: ToolFunction{
+				Name:        "test_tool",
+				Description: "A test tool",
+				Parameters:  map[string]interface{}{},
+			},
+		}
+	}
+
+	filtered := injectToolsIntoMessages(messages, tools, "claude-3-5-sonnet", nil)
+
+	foundAssistant := false
+	for _, m := range filtered {
+		if m.Role == "assistant" {
+			foundAssistant = true
+		}
+		if m.Role == "user" && strings.Contains(m.Content, "<system-reminder>") {
+			t.Errorf("Expected wrapper message to be dropped but found: %s", m.Content)
+		}
+	}
+
+	if !foundAssistant {
+		t.Errorf("Expected assistant message to be kept")
+	}
+
+	contextLossMetricsMu.Lock()
+	count := contextLossMetrics["empty_wrapper_user_message_dropped"]
+	contextLossMetricsMu.Unlock()
+
+	if count != 1 {
+		t.Errorf("Expected empty_wrapper_user_message_dropped to be recorded once, got %d", count)
+	}
+}
