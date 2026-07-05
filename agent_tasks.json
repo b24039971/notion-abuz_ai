@@ -5082,7 +5082,7 @@
     },
     {
       "id": "proxy-observability-legacy-collapse-search-context-comma-ok",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Validate legacy_collapse_dropped_search_context metrics map using comma-ok idiom in internal/proxy/tools_test.go",

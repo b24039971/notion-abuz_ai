@@ -1297,11 +1297,11 @@ func TestBuildTranscript_LegacyCollapseSearchContextDrop(t *testing.T) {
 	injectToolsIntoMessages(messages, tools, "claude-4", nil)
 
 	contextLossMetricsMu.Lock()
-	count := contextLossMetrics["legacy_collapse_dropped_search_context"]
+	count, exists := contextLossMetrics["legacy_collapse_dropped_search_context"]
 	contextLossMetricsMu.Unlock()
 
-	if count != 1 {
-		t.Errorf("Expected legacy_collapse_dropped_search_context to be 1, got %d", count)
+	if !exists || count != 1 {
+		t.Errorf("Expected legacy_collapse_dropped_search_context to be 1, got %d (exists: %v)", count, exists)
 	}
 }
 
