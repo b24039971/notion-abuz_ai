@@ -2034,3 +2034,35 @@ func TestBuildSessionChainContinuation_NonEmptyToolList(t *testing.T) {
 		t.Errorf("Expected empty_tools_fallback metric count 0, got %d", count)
 	}
 }
+func TestBuildSessionChainContinuation_RetryLoopMetric(t *testing.T) {
+	contextLossMetricsMu.Lock()
+	original := contextLossMetrics
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	t.Cleanup(func() {
+		contextLossMetricsMu.Lock()
+		contextLossMetrics = original
+		contextLossMetricsMu.Unlock()
+	})
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "Task execution"},
+		{Role: "assistant", Content: "try search", ToolCalls: []ToolCall{{ID: "c1", Function: ToolCallFunction{Name: "Search"}}}},
+		{Role: "tool", Content: "error: rate limit", ToolCallID: "c1", Name: "Search"},
+		{Role: "assistant", Content: "try search again", ToolCalls: []ToolCall{{ID: "c2", Function: ToolCallFunction{Name: "Search"}}}},
+		{Role: "tool", Content: "error: rate limit", ToolCallID: "c2", Name: "Search"},
+	}
+
+	buildSessionChainContinuation(messages, "Search", "/tmp")
+
+	contextLossMetricsMu.Lock()
+	count, exists := contextLossMetrics["retry_loop_detected"]
+	contextLossMetricsMu.Unlock()
+
+	if !exists {
+		t.Errorf("Expected retry_loop_detected metric to exist")
+	} else if count != 1 {
+		t.Errorf("Expected retry_loop_detected metric count 1, got %d", count)
+	}
+}

@@ -4877,7 +4877,7 @@
     },
     {
       "id": "proxy-observability-retry-loop-detected",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Track potential retry loops during multi-turn session continuation",
@@ -4952,6 +4952,21 @@
       ],
       "acceptance": [
         "A new test is added in `internal/proxy/tools_test.go` that verifies the `empty_tools_fallback` metric is 0 when `compactList` is provided."
+      ]
+    },
+    {
+      "id": "proxy-observability-retry-loop-detected-followup",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add integration test for retry loop undetected on mixed failures",
+      "description": "Add a test to verify that the retry_loop_detected metric is not incremented if the calls and errors do not perfectly align as identical repeated loops (e.g. call[A]->err[A]->call[B]->err[B]).",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A test confirms retry_loop_detected is not incremented on mixed call/err sequences."
       ]
     }
   ]
