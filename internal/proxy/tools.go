@@ -869,6 +869,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 					if runesCtx := []rune(ctx); len(runesCtx) > 600 {
 						log.Printf("[bridge] truncated large previous search context (len=%d runes) to 600 runes.", len(runesCtx))
 						recordContextLossMetric("search_context_truncated")
+						// Safe against multi-byte rune splitting because we slice the []rune rather than the raw string bytes.
 						ctx = string(runesCtx[:600]) + "..."
 					}
 					prevSearchContext = ctx
@@ -1296,6 +1297,7 @@ func buildSessionChainContinuation(messages []ChatMessage, compactList string, c
 			if runesCtx := []rune(ctx); len(runesCtx) > 600 {
 				log.Printf("[bridge] truncated large previous search context (len=%d runes) to 600 runes.", len(runesCtx))
 				recordContextLossMetric("search_context_truncated")
+				// Safe against multi-byte rune splitting because we slice the []rune rather than the raw string bytes.
 				ctx = string(runesCtx[:600]) + "..."
 			}
 			prevSearchContext = ctx

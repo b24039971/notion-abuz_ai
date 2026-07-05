@@ -1792,6 +1792,58 @@ func TestInjectToolsIntoMessages_LargeSearchContext(t *testing.T) {
 	}
 }
 
+func TestSearchContextTruncation_MultiByteRunes(t *testing.T) {
+	contextLossMetricsMu.Lock()
+	original := contextLossMetrics
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	t.Cleanup(func() {
+		contextLossMetricsMu.Lock()
+		contextLossMetrics = original
+		contextLossMetricsMu.Unlock()
+	})
+
+	longSearchCtx := "---\nSources:\n[1] "
+	for i := 0; i < 700; i++ {
+		longSearchCtx += "абв"
+	}
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "Test user query"},
+		{Role: "assistant", Content: longSearchCtx},
+		{Role: "user", Content: "What is the answer?"},
+	}
+
+	tools := []Tool{
+		{Function: ToolFunction{Name: "T1"}},
+		{Function: ToolFunction{Name: "T2"}},
+		{Function: ToolFunction{Name: "T3"}},
+		{Function: ToolFunction{Name: "T4"}},
+		{Function: ToolFunction{Name: "T5"}},
+		{Function: ToolFunction{Name: "T6"}},
+	}
+
+	res := injectToolsIntoMessages(messages, tools, "claude-3-5-sonnet-20241022", nil)
+
+	contextLossMetricsMu.Lock()
+	_, exists := contextLossMetrics["search_context_truncated"]
+	contextLossMetricsMu.Unlock()
+
+	if !exists {
+		t.Errorf("Expected search_context_truncated metric to be present")
+	}
+
+	if len(res) == 0 || !strings.Contains(res[len(res)-1].Content, "...") {
+		t.Errorf("Expected truncated result to have '...'")
+	}
+
+	// Ensure valid UTF-8 (no rune splitting)
+	if strings.ToValidUTF8(res[len(res)-1].Content, "") != res[len(res)-1].Content {
+		t.Errorf("Truncated result contains invalid UTF-8 (likely a split rune)")
+	}
+}
+
 func TestBuildSessionChainContinuation_LargeSearchContext(t *testing.T) {
 	contextLossMetricsMu.Lock()
 	original := contextLossMetrics
@@ -1827,6 +1879,49 @@ func TestBuildSessionChainContinuation_LargeSearchContext(t *testing.T) {
 
 	if len(res) == 0 || !strings.Contains(res[len(res)-1].Content, "...") {
 		t.Errorf("Expected truncated result to have '...'")
+	}
+}
+
+func TestBuildSessionChain_LargeSearchContext_MultiByteRunes(t *testing.T) {
+	contextLossMetricsMu.Lock()
+	original := contextLossMetrics
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	t.Cleanup(func() {
+		contextLossMetricsMu.Lock()
+		contextLossMetrics = original
+		contextLossMetricsMu.Unlock()
+	})
+
+	longSearchCtx := "---\nSources:\n[1] "
+	for i := 0; i < 700; i++ {
+		longSearchCtx += "абв"
+	}
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "Test user query"},
+		{Role: "assistant", Content: longSearchCtx, ToolCalls: []ToolCall{{ID: "tc1", Function: ToolCallFunction{Name: "Bash"}}}},
+		{Role: "tool", Content: "done", ToolCallID: "tc1"},
+	}
+
+	res := buildSessionChainContinuation(messages, "T1, T2", "/cwd")
+
+	contextLossMetricsMu.Lock()
+	_, exists := contextLossMetrics["search_context_truncated"]
+	contextLossMetricsMu.Unlock()
+
+	if !exists {
+		t.Errorf("Expected search_context_truncated metric to be present")
+	}
+
+	if len(res) == 0 || !strings.Contains(res[len(res)-1].Content, "...") {
+		t.Errorf("Expected truncated result to have '...'")
+	}
+
+	// Ensure valid UTF-8 (no rune splitting)
+	if strings.ToValidUTF8(res[len(res)-1].Content, "") != res[len(res)-1].Content {
+		t.Errorf("Truncated result contains invalid UTF-8 (likely a split rune)")
 	}
 }
 

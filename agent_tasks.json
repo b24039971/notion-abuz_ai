@@ -5297,7 +5297,7 @@
     },
     {
       "id": "proxy-observability-search-context-truncated-metrics",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add context metrics for search context truncation",
@@ -5309,6 +5309,22 @@
       ],
       "acceptance": [
         "A test validates correct truncation and metric for search context strings containing multi-byte UTF-8 runes."
+      ]
+    },
+    {
+      "id": "proxy-observability-legacy-collapse-truncated-tests",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for legacy collapse truncation metric",
+      "description": "Ensure legacy_collapse_truncated metric logs correctly handle Unicode inputs during truncation.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A test validates correct truncation and metric for legacy collapse strings containing multi-byte UTF-8 runes."
       ]
     }
   ]
