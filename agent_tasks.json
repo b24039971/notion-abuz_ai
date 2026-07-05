@@ -5021,7 +5021,7 @@
     },
     {
       "id": "proxy-tools-xml-array-fallback-metrics",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Validate context loss metrics emission for XML array wrapper fallback",
@@ -5048,6 +5048,21 @@
       ],
       "acceptance": [
         "A test asserts the fallback metric logic in buildSessionChainContinuation with no tools and non empty sequence."
+      ]
+    },
+    {
+      "id": "proxy-json-extraction-valid-candidate-bounds",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Verify unparseable json metric not triggered for valid tool calls",
+      "description": "In internal/proxy/tools_test.go, verify that the unparseable_json_candidate_truncated metric is NOT incremented when a valid small JSON object is successfully extracted via the bracket counting fallback in parseToolCalls.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A test correctly checks that toolModeLossMetrics does not report unparseable_json_candidate_truncated for a successful bracket counting extraction."
       ]
     }
   ]

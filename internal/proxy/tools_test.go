@@ -1836,6 +1836,10 @@ func TestParseToolCalls_XMLArrayFallbackMetrics(t *testing.T) {
 	xmlArrayMetrics = make(map[string]int)
 	xmlArrayMetricsMu.Unlock()
 
+	toolModeLossMetricsMu.Lock()
+	toolModeLossMetrics = make(map[string]int)
+	toolModeLossMetricsMu.Unlock()
+
 	// Direct array in XML wrapper
 	contentDirect := `<tool_call>
 [
@@ -1850,11 +1854,19 @@ func TestParseToolCalls_XMLArrayFallbackMetrics(t *testing.T) {
 	}
 
 	xmlArrayMetricsMu.Lock()
-	directCount := xmlArrayMetrics["direct_array_mode_auto"]
+	directCount, exists := xmlArrayMetrics["direct_array_mode_auto"]
 	xmlArrayMetricsMu.Unlock()
 
-	if directCount != 1 {
+	if !exists || directCount != 1 {
 		t.Errorf("Expected direct_array_mode_auto metric to be 1, got %d", directCount)
+	}
+
+	toolModeLossMetricsMu.Lock()
+	lossDirectCount, lossDirectExists := toolModeLossMetrics["xml_wrapper_fallback_mode_auto"]
+	toolModeLossMetricsMu.Unlock()
+
+	if !lossDirectExists || lossDirectCount != 1 {
+		t.Errorf("Expected xml_wrapper_fallback_mode_auto metric to be 1, got %d", lossDirectCount)
 	}
 
 	// Wrapper array in XML wrapper
@@ -1871,11 +1883,19 @@ func TestParseToolCalls_XMLArrayFallbackMetrics(t *testing.T) {
 	}
 
 	xmlArrayMetricsMu.Lock()
-	wrapperCount := xmlArrayMetrics["wrapper_array"]
+	wrapperCount, wrapperExists := xmlArrayMetrics["wrapper_array"]
 	xmlArrayMetricsMu.Unlock()
 
-	if wrapperCount != 1 {
+	if !wrapperExists || wrapperCount != 1 {
 		t.Errorf("Expected wrapper_array metric to be 1, got %d", wrapperCount)
+	}
+
+	toolModeLossMetricsMu.Lock()
+	lossWrapperCount, lossWrapperExists := toolModeLossMetrics["xml_wrapper_fallback"]
+	toolModeLossMetricsMu.Unlock()
+
+	if !lossWrapperExists || lossWrapperCount != 1 {
+		t.Errorf("Expected xml_wrapper_fallback metric to be 1, got %d", lossWrapperCount)
 	}
 }
 
