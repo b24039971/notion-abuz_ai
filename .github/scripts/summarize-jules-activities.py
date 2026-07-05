@@ -27,6 +27,7 @@ with open(sys.argv[1], "r", encoding="utf-8") as f:
 latest_agent_epoch = 0
 latest_user_epoch = 0
 latest_token_epoch = 0
+continue_token_count = 0
 latest_agent_blob = ""
 
 for activity in activities:
@@ -38,6 +39,7 @@ for activity in activities:
     if is_user:
         latest_user_epoch = max(latest_user_epoch, epoch)
         if TOKEN in blob:
+            continue_token_count += 1
             latest_token_epoch = max(latest_token_epoch, epoch)
     else:
         latest_agent_epoch = max(latest_agent_epoch, epoch)
@@ -63,4 +65,7 @@ finalize_markers = (
 if any(marker in latest_agent_lower for marker in finalize_markers):
     wait_kind = "finalize"
 
-print(f"{latest_agent_epoch}\t{latest_user_epoch}\t{latest_token_epoch}\t{wait_kind}")
+print(
+    f"{latest_agent_epoch}\t{latest_user_epoch}\t"
+    f"{latest_token_epoch}\t{wait_kind}\t{continue_token_count}"
+)

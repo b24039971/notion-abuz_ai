@@ -6,6 +6,7 @@ SOURCE="${JULES_SOURCE:-sources/github/${GITHUB_REPOSITORY:-Omnividente/notion-a
 LOOKBACK_HOURS="${LOOKBACK_HOURS:-24}"
 MIN_USER_REPLY_INTERVAL_MINUTES="${MIN_USER_REPLY_INTERVAL_MINUTES:-2}"
 STALE_AWAITING_FEEDBACK_MINUTES="${STALE_AWAITING_FEEDBACK_MINUTES:-30}"
+MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS="${MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS:-3}"
 
 read -r -d '' CONTINUE_PROMPT <<'EOF' || true
 AUTONOMOUS_CONTINUE_TOKEN
@@ -134,6 +135,7 @@ now_epoch="$(date -u +%s)"
 cutoff_epoch="$((now_epoch - LOOKBACK_HOURS * 3600))"
 reply_cooldown_seconds="$((MIN_USER_REPLY_INTERVAL_MINUTES * 60))"
 stale_feedback_seconds="$((STALE_AWAITING_FEEDBACK_MINUTES * 60))"
+max_stale_escalations="$MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS"
 
 active_sessions=0
 touched_sessions=0
@@ -162,6 +164,17 @@ jules_post() {
     -H "X-Goog-Api-Key: ${key}" \
     "${API_BASE}/${path}" \
     -d "$body" \
+    -o "$out"
+}
+
+jules_delete() {
+  local key="$1"
+  local path="$2"
+  local out="$3"
+  curl -fsS \
+    -X DELETE \
+    -H "X-Goog-Api-Key: ${key}" \
+    "${API_BASE}/${path}" \
     -o "$out"
 }
 
@@ -222,6 +235,13 @@ resolve_session_task_id_from_recent_map() {
   ' "$out" || true
 }
 
+record_active_task_id() {
+  local task_id="$1"
+  if [ -n "$task_id" ]; then
+    echo "$task_id" >> "$active_task_ids_file"
+  fi
+}
+
 session_epoch_filter='
   def ts:
     ((.updateTime // .createTime // "1970-01-01T00:00:00Z")
@@ -258,14 +278,12 @@ for i in "${!key_labels[@]}"; do
     seen_sessions[$session_name]=1
     session_ids+=("${session_name##*/}")
     echo "Jules session ${session_name} state: ${session_state}"
+    active_task_id=""
 
     case "$session_state" in
       QUEUED|PLANNING|IN_PROGRESS|AWAITING_PLAN_APPROVAL|AWAITING_USER_FEEDBACK)
         active_sessions=$((active_sessions + 1))
         active_task_id="$(extract_session_task_id "$key" "$session_name" "active")"
-        if [ -n "$active_task_id" ]; then
-          echo "$active_task_id" >> "$active_task_ids_file"
-        fi
         ;;
     esac
 
@@ -294,6 +312,7 @@ for i in "${!key_labels[@]}"; do
     fi
 
     if [ "$session_state" = "AWAITING_PLAN_APPROVAL" ]; then
+      record_active_task_id "$active_task_id"
       out="${tmpdir}/approve-${session_name//\//-}.json"
       if jules_post "$key" "${session_name}:approvePlan" '{}' "$out"; then
         echo "Approved Jules plan for ${session_name}."
@@ -305,6 +324,7 @@ for i in "${!key_labels[@]}"; do
     fi
 
     if [ "$session_state" != "AWAITING_USER_FEEDBACK" ]; then
+      record_active_task_id "$active_task_id"
       continue
     fi
 
@@ -316,10 +336,12 @@ for i in "${!key_labels[@]}"; do
       activity_summary="$(python3 .github/scripts/summarize-jules-activities.py "$activities_file")"
     fi
 
-    IFS=$'\t' read -r latest_agent_epoch last_user_epoch latest_token_epoch wait_kind <<<"$activity_summary"
+    IFS=$'\t' read -r latest_agent_epoch last_user_epoch latest_token_epoch wait_kind continue_token_count <<<"$activity_summary"
+    continue_token_count="${continue_token_count:-0}"
 
     if [ "${latest_agent_epoch:-0}" -eq 0 ]; then
       echo "Skipped ${session_name}; no agent activity found to answer."
+      record_active_task_id "$active_task_id"
       continue
     fi
 
@@ -332,24 +354,62 @@ for i in "${!key_labels[@]}"; do
       token_age="$((now_epoch - latest_token_epoch))"
       if [ "$token_age" -lt "$stale_feedback_seconds" ]; then
         echo "Skipped ${session_name}; autonomous continue already answers the latest wait state."
+        record_active_task_id "$active_task_id"
         continue
       fi
       if [ "${last_user_epoch:-0}" -gt "${latest_token_epoch:-0}" ]; then
         echo "Skipped ${session_name}; a newer user message already answers the latest wait state."
+        record_active_task_id "$active_task_id"
+        continue
+      fi
+      if [ "$continue_token_count" -ge "$max_stale_escalations" ]; then
+        echo "Autonomous continue limit reached for ${session_name}; deleting stale session and blocking task."
+        if [ -n "$active_task_id" ]; then
+          printf '%s\t%s\t%s\n' "${session_name##*/}" "$active_task_id" "repeated_stale_feedback" >> "$failed_sessions_file"
+        fi
+        out="${tmpdir}/delete-${session_name//\//-}.json"
+        if jules_delete "$key" "$session_name" "$out"; then
+          active_sessions=$((active_sessions - 1))
+          touched_sessions=$((touched_sessions + 1))
+          echo "Deleted stale Jules session ${session_name} after ${continue_token_count} autonomous continue messages."
+        else
+          echo "::warning::Could not delete stale Jules session ${session_name}."
+          record_active_task_id "$active_task_id"
+        fi
         continue
       fi
       echo "Previous autonomous continue for ${session_name} is stale after $((token_age / 60)) minute(s); sending escalation."
       prompt="$STALE_FEEDBACK_PROMPT"
     elif [ "${last_user_epoch:-0}" -ge "${latest_agent_epoch:-0}" ]; then
       echo "Skipped ${session_name}; a user message already answers the latest wait state."
+      record_active_task_id "$active_task_id"
+      continue
+    fi
+
+    if [ "$continue_token_count" -ge "$max_stale_escalations" ]; then
+      echo "Autonomous continue limit reached for ${session_name}; deleting repeated feedback session and blocking task."
+      if [ -n "$active_task_id" ]; then
+        printf '%s\t%s\t%s\n' "${session_name##*/}" "$active_task_id" "repeated_stale_feedback" >> "$failed_sessions_file"
+      fi
+      out="${tmpdir}/delete-${session_name//\//-}.json"
+      if jules_delete "$key" "$session_name" "$out"; then
+        active_sessions=$((active_sessions - 1))
+        touched_sessions=$((touched_sessions + 1))
+        echo "Deleted repeated-feedback Jules session ${session_name} after ${continue_token_count} autonomous continue messages."
+      else
+        echo "::warning::Could not delete repeated-feedback Jules session ${session_name}."
+        record_active_task_id "$active_task_id"
+      fi
       continue
     fi
 
     if [ "$((now_epoch - last_user_epoch))" -lt "$reply_cooldown_seconds" ]; then
       echo "Skipped ${session_name}; a user message was already sent recently."
+      record_active_task_id "$active_task_id"
       continue
     fi
 
+    record_active_task_id "$active_task_id"
     body="$(jq -n --arg prompt "$prompt" '{prompt: $prompt}')"
     out="${tmpdir}/send-${session_name//\//-}.json"
     if jules_post "$key" "${session_name}:sendMessage" "$body" "$out"; then

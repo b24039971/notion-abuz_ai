@@ -198,6 +198,18 @@ def decide_recovery(
             item.session_id for item in known_failed if item.task_id == session.task_id
         )
         count_for_task = counts[session.task_id]
+        if session.failure_kind == "repeated_stale_feedback":
+            return RecoveryDecision(
+                action="block",
+                task_id=session.task_id,
+                session_id=session.session_id,
+                sessions=sessions_for_task,
+                count_for_task=count_for_task,
+                reason=(
+                    "Jules session exhausted autonomous stale-feedback continuations "
+                    "without opening a PR or unblocking itself"
+                ),
+            )
         if count_for_task <= 1:
             reason = "first failed session for this task"
             if session.failure_kind == "routine_question":
