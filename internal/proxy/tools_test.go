@@ -1961,11 +1961,11 @@ func TestFallbackMissingAnchorMetric(t *testing.T) {
 	buildSessionChainContinuation(messages, "", "")
 
 	contextLossMetricsMu.Lock()
-	val := contextLossMetrics["fallback_missing_anchor"]
+	val, exists := contextLossMetrics["fallback_missing_anchor"]
 	contextLossMetricsMu.Unlock()
 
-	if val == 0 {
-		t.Errorf("Expected fallback_missing_anchor metric to be incremented, got %d", val)
+	if !exists || val == 0 {
+		t.Errorf("Expected fallback_missing_anchor metric to be present and incremented, got exists=%v val=%d", exists, val)
 	}
 }
 

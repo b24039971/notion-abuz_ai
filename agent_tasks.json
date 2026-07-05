@@ -45,7 +45,7 @@
   "tasks": [
     {
       "id": "proxy-observability-fallback-missing-anchor-comma-ok",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Validate fallback missing anchor metrics map using comma-ok idiom in internal/proxy/tools_test.go",
@@ -5078,6 +5078,81 @@
       ],
       "acceptance": [
         "A test correctly checks that toolModeLossMetrics does not report unparseable_json_candidate_truncated for a successful bracket counting extraction."
+      ]
+    },
+    {
+      "id": "proxy-observability-legacy-collapse-search-context-comma-ok",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Validate legacy_collapse_dropped_search_context metrics map using comma-ok idiom in internal/proxy/tools_test.go",
+      "description": "In the proxy (internal/proxy/tools_test.go), update the tests that assert the 'legacy_collapse_dropped_search_context' metric to use the comma-ok idiom instead of checking if it equals 0, preventing false positives from missing map keys.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "The tests asserting the `legacy_collapse_dropped_search_context` metric use the comma-ok idiom correctly."
+      ]
+    },
+    {
+      "id": "proxy-observability-tool-schema-fallback-comma-ok",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Validate tool_schema_simplification_fallback metrics map using comma-ok idiom in internal/proxy/tools_test.go",
+      "description": "In the proxy (internal/proxy/tools_test.go), update the tests that assert the 'tool_schema_simplification_fallback' metric to use the comma-ok idiom instead of checking if it equals 0, preventing false positives from missing map keys.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "The tests asserting the `tool_schema_simplification_fallback` metric use the comma-ok idiom correctly."
+      ]
+    },
+    {
+      "id": "proxy-observability-search-context-truncated-comma-ok",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Validate search_context_truncated metrics map using comma-ok idiom in internal/proxy/tools_test.go",
+      "description": "In the proxy (internal/proxy/tools_test.go), update the tests that assert the 'search_context_truncated' metric to use the comma-ok idiom instead of checking if it equals 0, preventing false positives from missing map keys.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "The tests asserting the `search_context_truncated` metric use the comma-ok idiom correctly."
+      ]
+    },
+    {
+      "id": "proxy-observability-empty-wrapper-dropped-comma-ok",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Validate empty_wrapper_user_message_dropped metrics map using comma-ok idiom in internal/proxy/tools_test.go",
+      "description": "In the proxy (internal/proxy/tools_test.go), update the tests that assert the 'empty_wrapper_user_message_dropped' metric to use the comma-ok idiom instead of checking if it equals 0, preventing false positives from missing map keys.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "The tests asserting the `empty_wrapper_user_message_dropped` metric use the comma-ok idiom correctly."
+      ]
+    },
+    {
+      "id": "proxy-observability-empty-tools-fallback-comma-ok",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Validate empty_tools_fallback metrics map using comma-ok idiom in internal/proxy/tools_test.go",
+      "description": "In the proxy (internal/proxy/tools_test.go), update the tests that assert the 'empty_tools_fallback' metric to use the comma-ok idiom instead of checking if it equals 0, preventing false positives from missing map keys.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "The tests asserting the `empty_tools_fallback` metric use the comma-ok idiom correctly."
       ]
     }
   ]
