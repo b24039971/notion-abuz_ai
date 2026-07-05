@@ -4134,7 +4134,7 @@
     },
     {
       "id": "proxy-diagnose-multi-turn-tool-loss-reason-followup-test",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add integration test for JSON tool-call mode loss during session continuation",
@@ -4144,7 +4144,8 @@
       ],
       "acceptance": [
         "A test case simulating tool mode loss and verifying metrics is added."
-      ]
+      ],
+      "blocked_reason": "micro/test-only task without concrete live smoke, transcript, CI, or offline reproduction evidence"
     },
     {
       "id": "proxy-behavior-tool-choice-mode-tracking-fallback",
@@ -4582,7 +4583,7 @@
     },
     {
       "id": "proxy-observability-detect-system-message-dropped-regex-match2",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add test for regex-based system message extraction",
@@ -4593,7 +4594,8 @@
       ],
       "acceptance": [
         "A test asserts that CWD is correctly extracted from a system message matching the <cwd> regex."
-      ]
+      ],
+      "blocked_reason": "micro/test-only task without concrete live smoke, transcript, CI, or offline reproduction evidence"
     },
     {
       "id": "proxy-observability-search-context-truncation-metrics",
@@ -4722,7 +4724,7 @@
     },
     {
       "id": "proxy-session-recovery-coverage",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Improve session recovery test coverage",
@@ -4734,7 +4736,8 @@
       "acceptance": [
         "Test coverage for session recovery is improved with more edge cases.",
         "No existing behavior is broken."
-      ]
+      ],
+      "blocked_reason": "micro/test-only task without concrete live smoke, transcript, CI, or offline reproduction evidence"
     },
     {
       "id": "proxy-observability-track-large-search-context-truncation",
@@ -4768,7 +4771,7 @@
     },
     {
       "id": "proxy-observability-track-large-search-context-truncation-followup",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add track metrics for previous search context dropped",
@@ -4779,11 +4782,12 @@
       ],
       "acceptance": [
         "A test explicitly validates the counter increment for legacy_collapse_dropped_search_context when a long search context is dropped."
-      ]
+      ],
+      "blocked_reason": "micro/test-only task without concrete live smoke, transcript, CI, or offline reproduction evidence"
     },
     {
       "id": "proxy-observability-search-context-truncation-metrics-followup",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add test for search context truncation empty metrics",
@@ -4794,11 +4798,12 @@
       ],
       "acceptance": [
         "A test validates that search_context_truncated is not incremented for normal/short search context."
-      ]
+      ],
+      "blocked_reason": "micro/test-only task without concrete live smoke, transcript, CI, or offline reproduction evidence"
     },
     {
       "id": "automation-health-no-eligible-autonomous-task-e587fcdb",
-      "status": "todo",
+      "status": "blocked",
       "area": "automation",
       "risk": "low",
       "title": "Fix automation health finding: no_eligible_autonomous_task",
@@ -4817,7 +4822,90 @@
       "health_finding_hash": "e587fcdbecfd",
       "health_finding_code": "no_eligible_autonomous_task",
       "health_finding_severity": "degraded",
-      "health_report_generated_at": "2026-07-04T22:10:02Z"
+      "health_report_generated_at": "2026-07-04T22:10:02Z",
+      "blocked_reason": "Task is blocked because it is an operational/observability finding and no direct logging change or script modification is required within the allowed_paths."
+    },
+    {
+      "id": "proxy-anthropic-sse-midstream-reset",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Handle premature SSE connection resets mid-stream",
+      "description": "In the proxy (internal/proxy/anthropic.go), premature SSE connection resets mid-stream must be handled by explicitly emitting an error event and returning immediately. Falling through and subsequently sending a misleading message_stop with end_turn causes clients to attempt parsing truncated JSON blocks, breaking continuity. To accurately simulate premature network connection resets (e.g., unexpected EOF) mid-stream in Go httptest servers, simply returning from the handler is insufficient as it sends a clean chunked HTTP EOF. You must hijack the underlying TCP connection using w.(http.Hijacker) and invoke conn.Close(). This acts as a runtime proxy change to fix an evidence-backed compatibility gap.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "internal/proxy/anthropic_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Premature SSE connection resets are explicitly handled by emitting an error event and returning immediately instead of sending a misleading message_stop.",
+        "A test explicitly simulates mid-stream unexpected EOF by hijacking and closing the TCP connection."
+      ]
+    },
+    {
+      "id": "proxy-tools-schema-simplification-recursion-limit",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Prevent panics from unbounded JSON schema recursion during simplification",
+      "description": "In the proxy (internal/proxy/tools.go), to prevent panics from unbounded JSON schema recursion during simplification, simplifySchemaNode needs to enforce a maximum recursion depth limit (e.g., 100). If this limit is exceeded, it returns an empty schema map and tracks the event using the tool_schema_simplification_recursion_limit context loss metric. This runtime fix addresses potential panics.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "simplifySchemaNode enforces a maximum recursion depth limit.",
+        "The tool_schema_simplification_recursion_limit context loss metric is explicitly recorded when the limit is exceeded."
+      ]
+    },
+    {
+      "id": "proxy-observability-empty-tools-fallback",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Track empty tool list in multi-turn fallback",
+      "description": "In the proxy (internal/proxy/tools.go), when a multi-turn session continuation is invoked with an empty tool list (e.g., compactList == \"\" due to missing tools from a previous turn), it must be explicitly tracked for observability by recording the empty_tools_fallback metric. This adds vital runtime context observability.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "The empty_tools_fallback metric is recorded when session continuation is invoked with an empty tool list."
+      ]
+    },
+    {
+      "id": "proxy-observability-retry-loop-detected",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Track potential retry loops during multi-turn session continuation",
+      "description": "In the proxy (internal/proxy/tools.go), potential retry loops during multi-turn session continuation (detected as repeated call -> err sequences for the same tool) should be explicitly tracked for observability using the retry_loop_detected context loss metric.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "The retry_loop_detected context loss metric is explicitly recorded when repeated call->err sequences for the same tool are detected."
+      ]
+    },
+    {
+      "id": "proxy-session-recovery-diagnostics",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Log explicit diagnostics when clip heuristically truncates context",
+      "description": "In the proxy (internal/proxy/session.go), explicit diagnostic logging should be emitted when session recovery heuristically truncates context (via the clip function) or drops conversation history entries, to help debug Claude Code bridge context loss in production.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/session_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Explicit diagnostic logging is emitted in clip or session recovery when conversation history entries are dropped."
+      ]
     }
   ]
 }
