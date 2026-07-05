@@ -5219,7 +5219,7 @@
     },
     {
       "id": "proxy-tools-tool-schema-metrics-simplification",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Evaluate adding specific recursion depth metrics for tool schema simplification",

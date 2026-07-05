@@ -1584,6 +1584,17 @@ func TestSimplifyToolSchema_PropertiesArrayFallback(t *testing.T) {
 }
 
 func TestSimplifyToolSchema_UnboundedRecursion(t *testing.T) {
+	contextLossMetricsMu.Lock()
+	oldMetrics := contextLossMetrics
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	defer func() {
+		contextLossMetricsMu.Lock()
+		contextLossMetrics = oldMetrics
+		contextLossMetricsMu.Unlock()
+	}()
+
 	// Create a deeply nested structure exceeding maxSchemaDepth (100)
 	var root map[string]interface{} = map[string]interface{}{}
 	current := root
@@ -1613,6 +1624,19 @@ func TestSimplifyToolSchema_UnboundedRecursion(t *testing.T) {
 	// It should reach exactly maxSchemaDepth (100).
 	if depth != 100 {
 		t.Errorf("Expected truncated recursion depth 100, got %d", depth)
+	}
+
+	contextLossMetricsMu.Lock()
+	countMapLimit, existsMapLimit := contextLossMetrics["tool_schema_simplification_recursion_limit"]
+	countArrLimit, existsArrLimit := contextLossMetrics["tool_schema_simplification_recursion_limit_array"]
+	contextLossMetricsMu.Unlock()
+
+	if !existsMapLimit || countMapLimit == 0 {
+		t.Errorf("expected tool_schema_simplification_recursion_limit metric to be recorded, but it was not")
+	}
+
+	if existsArrLimit && countArrLimit != 0 {
+		t.Errorf("expected tool_schema_simplification_recursion_limit_array metric to NOT be recorded, got %d", countArrLimit)
 	}
 }
 
@@ -2047,6 +2071,17 @@ func TestLegacyCollapse_SearchContextTruncatedMetrics(t *testing.T) {
 }
 
 func TestSimplifyToolSchema_UnboundedRecursionArray(t *testing.T) {
+	contextLossMetricsMu.Lock()
+	oldMetrics := contextLossMetrics
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	defer func() {
+		contextLossMetricsMu.Lock()
+		contextLossMetrics = oldMetrics
+		contextLossMetricsMu.Unlock()
+	}()
+
 	// Create a deeply nested array structure exceeding maxSchemaDepth (100)
 	var current interface{} = []interface{}{}
 
@@ -2059,6 +2094,19 @@ func TestSimplifyToolSchema_UnboundedRecursionArray(t *testing.T) {
 	// We only care that it doesn't panic.
 	if result == nil {
 		t.Errorf("Expected non-nil result")
+	}
+
+	contextLossMetricsMu.Lock()
+	countMapLimit, existsMapLimit := contextLossMetrics["tool_schema_simplification_recursion_limit"]
+	countArrLimit, existsArrLimit := contextLossMetrics["tool_schema_simplification_recursion_limit_array"]
+	contextLossMetricsMu.Unlock()
+
+	if !existsArrLimit || countArrLimit == 0 {
+		t.Errorf("expected tool_schema_simplification_recursion_limit_array metric to be recorded, but it was not")
+	}
+
+	if existsMapLimit && countMapLimit != 0 {
+		t.Errorf("expected tool_schema_simplification_recursion_limit metric to NOT be recorded, got %d", countMapLimit)
 	}
 }
 func TestBuildSessionChainContinuation_NonEmptyToolList(t *testing.T) {

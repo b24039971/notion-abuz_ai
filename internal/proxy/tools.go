@@ -236,7 +236,12 @@ func simplifyToolSchema(schema interface{}) interface{} {
 
 func simplifySchemaNode(schema interface{}, inArrayItems bool, depth int) interface{} {
 	if depth >= maxSchemaDepth {
-		recordContextLossMetric("tool_schema_simplification_recursion_limit")
+		switch schema.(type) {
+		case []interface{}:
+			recordContextLossMetric("tool_schema_simplification_recursion_limit_array")
+		default:
+			recordContextLossMetric("tool_schema_simplification_recursion_limit")
+		}
 		log.Printf("[bridge] diagnostics: simplifySchemaNode dropped schema to prevent recursive unbounded depth panic, returning empty schema")
 		return map[string]interface{}{}
 	}
