@@ -4924,7 +4924,7 @@
     },
     {
       "id": "proxy-tools-schema-simplification-panic-safety",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add bounds check for proxy tools schema parsing length",
@@ -4999,6 +4999,23 @@
       ],
       "acceptance": [
         "Tests assert that the 'empty_system_prompt_dropped' context loss metric is explicitly recorded when an empty system message is dropped in buildRecoveryMessages."
+      ]
+    },
+    {
+      "id": "proxy-json-extraction-candidate-bounds-check",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add length bounds check for candidate JSON blocks during robust extraction",
+      "description": "In internal/proxy/tools.go, when logging unfenced or deeply nested unparseable JSON candidate blocks, ensure that extremely large text output does not bloat logs by imposing a safe bounds check on candidate strings in logging directives.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Add length limit check on candidate blocks during fallback extraction in tools.go.",
+        "Ensure metric tracking of large unparseable json is correctly sized."
       ]
     }
   ]

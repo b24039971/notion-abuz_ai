@@ -186,7 +186,13 @@ func buildToolList(tools []Tool) string {
 		if t.Function.Parameters != nil {
 			simplified := simplifyToolSchema(t.Function.Parameters)
 			params, _ := json.Marshal(simplified)
-			sb.WriteString(fmt.Sprintf("\nParameters: %s", string(params)))
+			paramsStr := string(params)
+			if runes := []rune(paramsStr); len(runes) > 4000 {
+				recordContextLossMetric("tool_schema_json_truncated")
+				log.Printf("[bridge] diagnostic: truncated large tool schema json string (len=%d runes) to 4000 runes to prevent OOM/token bloat", len(runes))
+				paramsStr = string(runes[:4000]) + "..."
+			}
+			sb.WriteString(fmt.Sprintf("\nParameters: %s", paramsStr))
 		}
 		sb.WriteString("\n")
 	}

@@ -2066,3 +2066,45 @@ func TestBuildSessionChainContinuation_RetryLoopMetric(t *testing.T) {
 		t.Errorf("Expected retry_loop_detected metric count 1, got %d", count)
 	}
 }
+
+func TestBuildToolList_SchemaTruncation(t *testing.T) {
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	longPropName := strings.Repeat("a", 4500)
+	tools := []Tool{
+		{
+			Function: ToolFunction{
+				Name:        "TestFunc",
+				Description: "A test function",
+				Parameters: map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						longPropName: map[string]interface{}{
+							"type": "string",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	result := buildToolList(tools)
+
+	if !strings.Contains(result, "Function: TestFunc - A test function") {
+		t.Errorf("expected function definition, got %s", result)
+	}
+
+	if !strings.Contains(result, "...") {
+		t.Errorf("expected schema to be truncated")
+	}
+
+	contextLossMetricsMu.Lock()
+	count, exists := contextLossMetrics["tool_schema_json_truncated"]
+	contextLossMetricsMu.Unlock()
+
+	if !exists || count != 1 {
+		t.Errorf("expected metric tool_schema_json_truncated to be 1, got %d", count)
+	}
+}
