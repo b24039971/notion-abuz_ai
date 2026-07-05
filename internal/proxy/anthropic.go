@@ -1763,15 +1763,17 @@ func streamAnthropicTextResponse(w http.ResponseWriter, acc *Account, messages [
 	}, callOpts)
 
 	if cbErr != nil {
-		if !headersSent {
-			if errors.Is(cbErr, ErrQuotaExhausted) {
-				return cbErr
-			}
-			log.Printf("[err] %s: %v", requestID, cbErr)
-			writeAnthropicError(w, requestID, http.StatusBadGateway, "notion API error: "+cbErr.Error(), "api_error")
-			return nil
+		if errors.Is(cbErr, ErrQuotaExhausted) {
+			return cbErr
 		}
 		log.Printf("[err] %s: streaming failed mid-stream, partial state: sawContent=%v, flushed=%d chars, toolURLs=%d, error=%v", requestID, sawContent, fullContent.Len(), len(knownCitationURLs), cbErr)
+		if !headersSent {
+			w.Header().Set("Content-Type", "text/event-stream")
+			w.Header().Set("Cache-Control", "no-cache")
+			w.Header().Set("Connection", "keep-alive")
+			w.Header().Set("X-Accel-Buffering", "no")
+			w.WriteHeader(http.StatusOK)
+		}
 		sendAnthropicSSE(w, flusher, "error", map[string]interface{}{
 			"type": "error",
 			"error": map[string]interface{}{
@@ -1940,8 +1942,24 @@ func handleAnthropicStream(w http.ResponseWriter, acc *Account, messages []ChatM
 		if errors.Is(cbErr, ErrQuotaExhausted) {
 			return cbErr
 		}
-		log.Printf("[err] %s: %v", requestID, cbErr)
-		writeAnthropicError(w, requestID, http.StatusBadGateway, "notion API error: "+cbErr.Error(), "api_error")
+		log.Printf("[err] %s: streaming failed mid-stream, partial state: sawContent=false, toolURLs=0, error=%v", requestID, cbErr)
+
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
+		w.Header().Set("X-Accel-Buffering", "no")
+		w.WriteHeader(http.StatusOK)
+
+		flusher, ok := w.(http.Flusher)
+		if ok {
+			sendAnthropicSSE(w, flusher, "error", map[string]interface{}{
+				"type": "error",
+				"error": map[string]interface{}{
+					"type":    "api_error",
+					"message": "notion API error: " + cbErr.Error(),
+				},
+			})
+		}
 		return nil
 	}
 
@@ -2725,15 +2743,21 @@ func handleResearcherStream(w http.ResponseWriter, acc *Account, messages []Chat
 			return cbErr
 		}
 		log.Printf("[err] %s researcher: %v", requestID, cbErr)
+		log.Printf("[err] %s: streaming failed mid-stream, partial state: thinking_chars=%d, text_chars=%d, textBlockStarted=%v", requestID, thinkingForLog.Len(), textForLog.Len(), textBlockStarted)
 		if !headersSent {
-			writeAnthropicError(w, requestID, http.StatusBadGateway, "notion researcher error: "+cbErr.Error(), "api_error")
-		} else {
-			log.Printf("[err] %s: streaming failed mid-stream, partial state: thinking_chars=%d, text_chars=%d, textBlockStarted=%v", requestID, thinkingForLog.Len(), textForLog.Len(), textBlockStarted)
+			w.Header().Set("Content-Type", "text/event-stream")
+			w.Header().Set("Cache-Control", "no-cache")
+			w.Header().Set("Connection", "keep-alive")
+			w.Header().Set("X-Accel-Buffering", "no")
+			w.WriteHeader(http.StatusOK)
+		}
+		flusher, ok := w.(http.Flusher)
+		if ok {
 			sendAnthropicSSE(w, flusher, "error", map[string]interface{}{
 				"type": "error",
 				"error": map[string]interface{}{
 					"type":    "api_error",
-					"message": "notion API error: " + cbErr.Error(),
+					"message": "notion researcher error: " + cbErr.Error(),
 				},
 			})
 		}

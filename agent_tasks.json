@@ -4827,7 +4827,7 @@
     },
     {
       "id": "proxy-anthropic-sse-midstream-reset",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Handle premature SSE connection resets mid-stream",
@@ -4905,6 +4905,21 @@
       ],
       "acceptance": [
         "Explicit diagnostic logging is emitted in clip or session recovery when conversation history entries are dropped."
+      ]
+    },
+    {
+      "id": "proxy-observability-detect-system-message-dropped-regex-match2-followup",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for explicit dropping of Claude Code system messages via regex",
+      "description": "In the proxy (internal/proxy/tools.go), when a system message is explicitly dropped after successfully extracting the working directory via regex (<cwd>...</cwd>), it is tracked using the system_message_dropped_cwd_regex context loss metric for observability. Add a test to assert that this metric is correctly updated during extraction.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A test confirms system_message_dropped_cwd_regex is tracked when matched."
       ]
     }
   ]
