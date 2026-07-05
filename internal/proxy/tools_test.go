@@ -948,6 +948,9 @@ func TestSimplifyToolSchema(t *testing.T) {
 }
 
 func TestSimplifyToolSchemaObservability(t *testing.T) {
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
 	// Add test coverage for diagnostic log when truncating long descriptions
 	inputJSON := `{
 		"type": "object",
@@ -1398,6 +1401,9 @@ func TestParseToolCallsUnparseableMetric(t *testing.T) {
 }
 
 func TestSimplifyToolSchema_ComplexArrayFallback(t *testing.T) {
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
 	rawJSON := `{"type": "array", "items": {"$ref": "#/defs/complex"}}`
 	var rawSchema interface{}
 	if err := json.Unmarshal([]byte(rawJSON), &rawSchema); err != nil {
@@ -1514,6 +1520,9 @@ And the valid tool call:
 }
 
 func TestSimplifyToolSchema_PropertiesArrayFallback(t *testing.T) {
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
 	rawJSON := `{"type": "array", "items": {"properties": {"field": {"type": "string"}}}}`
 	var rawSchema interface{}
 	if err := json.Unmarshal([]byte(rawJSON), &rawSchema); err != nil {
@@ -1853,6 +1862,9 @@ func TestBuildSessionChainContinuation_LargeSearchContext(t *testing.T) {
 }
 
 func TestParseToolCalls_XMLArrayFallbackMetrics(t *testing.T) {
+	toolModeLossMetricsMu.Lock()
+	toolModeLossMetrics = make(map[string]int)
+	toolModeLossMetricsMu.Unlock()
 	xmlArrayMetricsMu.Lock()
 	xmlArrayMetrics = make(map[string]int)
 	xmlArrayMetricsMu.Unlock()
@@ -2146,7 +2158,7 @@ func TestBuildToolList_SchemaTruncation(t *testing.T) {
 	contextLossMetricsMu.Unlock()
 
 	if !exists || count != 1 {
-		t.Errorf("expected metric tool_schema_json_truncated to be 1, got %d", count)
+		t.Errorf("expected metric tool_schema_json_truncated to be 1 and exist, got %d (exists: %v)", count, exists)
 	}
 }
 

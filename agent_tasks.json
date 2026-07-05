@@ -5172,7 +5172,7 @@
     },
     {
       "id": "proxy-observability-metric-reset-sync",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Ensure metric maps in internal/proxy/tools_test.go are explicitly reset per test",
@@ -5198,6 +5198,41 @@
       ],
       "acceptance": [
         "The test asserting the `tool_schema_json_truncated` metric uses the comma-ok idiom correctly."
+      ]
+    },
+    {
+      "id": "proxy-tools-test-cleanup-duplicate-resets",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Cleanup redundant metric map resets in proxy tools test suite",
+      "description": "After adding safe prepend resets to all tests in internal/proxy/tools_test.go, there are now some redundant resets (e.g., defer block resets that follow the prepend) scattered across the test suite. Remove these redundant secondary resets for cleaner code while retaining the primary resets at the beginning of each test.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Redundant/duplicate lock and map reset patterns later in the tests are removed.",
+        "Each test that utilizes a metric map retains exactly one valid lock/reset/unlock sequence at its very start.",
+        "Tests pass."
+      ]
+    },
+    {
+      "id": "proxy-tools-tool-schema-metrics-simplification",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Evaluate adding specific recursion depth metrics for tool schema simplification",
+      "description": "The simplifyToolSchema function relies on recursion, and bounded depth is important. The metrics can be made more explicit to track occurrences of deeply nested array simplifications specifically. Evaluate the current metrics and add specific telemetry keys if necessary.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Evaluate telemetry for deeply nested tool schemas.",
+        "Add more granular recursion metric keys if necessary.",
+        "Tests pass."
       ]
     }
   ]
