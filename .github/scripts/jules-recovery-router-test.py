@@ -13,6 +13,7 @@ from unittest.mock import patch
 
 
 SCRIPT_PATH = Path(__file__).with_name("jules-recovery-router.py")
+WORKFLOW_PATH = Path(__file__).parents[1] / "workflows" / "jules_recovery_router.yml"
 SPEC = importlib.util.spec_from_file_location("jules_recovery_router", SCRIPT_PATH)
 router = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
@@ -176,6 +177,16 @@ def plan(input_state: dict, ledger: dict | None = None, health_mode: str = "enfo
 
 
 class RecoveryRouterTest(unittest.TestCase):
+    def test_workflow_reruns_router_after_pr_checks_finish(self) -> None:
+        text = WORKFLOW_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("workflow_run:", text)
+        self.assertIn("- CI", text)
+        self.assertIn("- RDSH Local Live Smoke", text)
+        self.assertIn("- 1. Auto-Validate and Merge Jules PRs", text)
+        self.assertIn("- 4. Advisory Critic Review", text)
+        self.assertIn("- completed", text)
+
     def test_github_get_retries_transient_503(self) -> None:
         client = router.GitHubClient(api_url="https://api.github.test", repo=REPO, token="token")
         transient = router.urllib.error.HTTPError(

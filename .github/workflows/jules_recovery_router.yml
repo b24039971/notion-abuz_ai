@@ -3,6 +3,14 @@ name: Jules Recovery Router
 on:
   schedule:
     - cron: "*/5 * * * *"
+  workflow_run:
+    workflows:
+      - CI
+      - RDSH Local Live Smoke
+      - 1. Auto-Validate and Merge Jules PRs
+      - 4. Advisory Critic Review
+    types:
+      - completed
   pull_request_target:
     types:
       - opened
