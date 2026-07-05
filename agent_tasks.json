@@ -5127,7 +5127,7 @@
     },
     {
       "id": "proxy-observability-empty-wrapper-dropped-comma-ok",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Validate empty_wrapper_user_message_dropped metrics map using comma-ok idiom in internal/proxy/tools_test.go",
@@ -5153,6 +5153,21 @@
       ],
       "acceptance": [
         "The tests asserting the `empty_tools_fallback` metric use the comma-ok idiom correctly."
+      ]
+    },
+    {
+      "id": "proxy-observability-tool-schema-metric-comma-ok",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Validate tool_schema_truncated metric using comma-ok idiom",
+      "description": "In the proxy tests, update the assertion for the 'tool_schema_truncated' metric to use the comma-ok idiom to prevent false positives from missing map keys.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "The test asserting the `tool_schema_truncated` metric uses the comma-ok idiom correctly."
       ]
     }
   ]

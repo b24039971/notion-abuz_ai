@@ -1675,10 +1675,12 @@ func TestInjectToolsIntoMessages_DropsEmptyWrapperUserMessage(t *testing.T) {
 	}
 
 	contextLossMetricsMu.Lock()
-	count := contextLossMetrics["empty_wrapper_user_message_dropped"]
+	count, exists := contextLossMetrics["empty_wrapper_user_message_dropped"]
 	contextLossMetricsMu.Unlock()
 
-	if count != 1 {
+	if !exists {
+		t.Errorf("Expected empty_wrapper_user_message_dropped metric to be present")
+	} else if count != 1 {
 		t.Errorf("Expected empty_wrapper_user_message_dropped to be recorded once, got %d", count)
 	}
 }
