@@ -5686,6 +5686,73 @@
       "acceptance": [
         "Add test TestBuildToolList_EmptyDescription that verifies the output when tool.Function.Description is empty"
       ]
+    },
+    {
+      "id": "automation-health-duplicate-open-autonomous-prs-cdeca939",
+      "status": "todo",
+      "area": "automation",
+      "risk": "medium",
+      "title": "Fix automation health finding: duplicate_open_autonomous_prs",
+      "description": "Automation Health reported critical finding `duplicate_open_autonomous_prs` in window `current`. Message: More than one autonomous PR is open. Evidence: {\"pr_numbers\": [351, 313]}",
+      "allowed_paths": [
+        ".github/scripts/count-autonomous-prs.py",
+        ".github/workflows/jules_next_task.yml",
+        ".github/workflows/jules_unattended_monitor.yml",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Root cause for Automation Health finding `duplicate_open_autonomous_prs` is identified using automation-health artifacts, CI checks, Jules session data, or manifest evidence.",
+        "The implementation fixes the automation issue or blocks this task with a concrete blocked_reason naming missing evidence, permissions, or external API instability.",
+        "A follow-up Automation Health run no longer reports `duplicate_open_autonomous_prs`, or the PR body explains why the finding is intentionally tolerated."
+      ],
+      "health_finding_hash": "cdeca939c283",
+      "health_finding_code": "duplicate_open_autonomous_prs",
+      "health_finding_severity": "critical",
+      "health_report_generated_at": "2026-07-06T09:03:26Z"
+    },
+    {
+      "id": "automation-health-quality-failures-spike-6e14b562",
+      "status": "todo",
+      "area": "automation",
+      "risk": "medium",
+      "title": "Fix automation health finding: quality_failures_spike",
+      "description": "Automation Health reported critical finding `quality_failures_spike` in window `24h`. Message: Three or more autonomous PRs were marked needs-quality-fix in 24h. Evidence: {\"pr_numbers\": [353, 351, 313]}",
+      "allowed_paths": [
+        ".github/scripts/review-autonomous-pr-quality.py",
+        ".github/workflows/jules_automerge.yml",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Root cause for Automation Health finding `quality_failures_spike` is identified using automation-health artifacts, CI checks, Jules session data, or manifest evidence.",
+        "The implementation fixes the automation issue or blocks this task with a concrete blocked_reason naming missing evidence, permissions, or external API instability.",
+        "A follow-up Automation Health run no longer reports `quality_failures_spike`, or the PR body explains why the finding is intentionally tolerated."
+      ],
+      "health_finding_hash": "6e14b562858e",
+      "health_finding_code": "quality_failures_spike",
+      "health_finding_severity": "critical",
+      "health_report_generated_at": "2026-07-06T09:03:26Z"
+    },
+    {
+      "id": "automation-health-agent-tasks-conflicting-open-pr-1bb636b3",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Fix automation health finding: agent_tasks_conflicting_open_pr",
+      "description": "Automation Health reported degraded finding `agent_tasks_conflicting_open_pr` in window `current`. Message: Open autonomous PRs touch agent_tasks.json and appear non-mergeable. Evidence: {\"pr_numbers\": [351, 313]}",
+      "allowed_paths": [
+        ".github/scripts/open-ready-jules-prs.py",
+        ".github/workflows/jules_automerge.yml",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Root cause for Automation Health finding `agent_tasks_conflicting_open_pr` is identified using automation-health artifacts, CI checks, Jules session data, or manifest evidence.",
+        "The implementation fixes the automation issue or blocks this task with a concrete blocked_reason naming missing evidence, permissions, or external API instability.",
+        "A follow-up Automation Health run no longer reports `agent_tasks_conflicting_open_pr`, or the PR body explains why the finding is intentionally tolerated."
+      ],
+      "health_finding_hash": "1bb636b38345",
+      "health_finding_code": "agent_tasks_conflicting_open_pr",
+      "health_finding_severity": "degraded",
+      "health_report_generated_at": "2026-07-06T09:03:26Z"
     }
   ]
 }
