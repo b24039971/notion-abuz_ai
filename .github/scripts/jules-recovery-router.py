@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -32,6 +33,7 @@ QUALITY_FIX_MARKER = "AUTONOMOUS_QUALITY_FIX_REQUEST"
 ACTIVE_NEXT_TASK_COOLDOWN_MINUTES = 10
 HEALTH_ENFORCE_COOLDOWN_MINUTES = 20
 RERUN_AUTOMERGE_COOLDOWN_MINUTES = 120
+FAILED_CHECK_RECOVERY_COOLDOWN_MINUTES = 30
 MONITOR_COOLDOWN_MINUTES = 7
 QUALITY_FIX_RECOVERY_COOLDOWN_MINUTES = 30
 QUALITY_FIX_CIRCUIT_BREAKER_ATTEMPTS = 3
@@ -514,6 +516,32 @@ def latest_failed_automerge_run(pr: dict[str, Any]) -> str:
     return ""
 
 
+def failed_check_runs(pr: dict[str, Any]) -> list[dict[str, Any]]:
+    failed_conclusions = {"failure", "timed_out", "action_required", "startup_failure"}
+    return [
+        check_run
+        for check_run in pr.get("check_runs", [])
+        if str(check_run.get("status") or "") == "completed"
+        and str(check_run.get("conclusion") or "") in failed_conclusions
+    ]
+
+
+def check_run_display_name(check_run: dict[str, Any]) -> str:
+    workflow = str(check_run.get("workflowName") or check_run.get("workflow_name") or "")
+    name = str(check_run.get("name") or "unknown")
+    return f"{workflow} / {name}" if workflow else name
+
+
+def failed_check_fingerprint(pr: dict[str, Any]) -> str:
+    parts: list[str] = []
+    for check_run in failed_check_runs(pr):
+        name = check_run_display_name(check_run)
+        run_id = check_run_run_id(check_run)
+        conclusion = str(check_run.get("conclusion") or "")
+        parts.append(f"{name}:{run_id}:{conclusion}")
+    return hashlib.sha256("|".join(sorted(parts)).encode("utf-8")).hexdigest()[:16]
+
+
 def has_pending_checks(pr: dict[str, Any]) -> bool:
     return any(
         str(check_run.get("status") or "") != "completed"
@@ -656,6 +684,38 @@ def conflict_recovery_prompt(pr: dict[str, Any]) -> str:
         "- запусти релевантные проверки и push исправление в эту же PR ветку.\n\n"
         "Не жди ответа пользователя, если действие безопасное и не требует секретов, production-доступа или destructive changes."
         f"{details_block}"
+    )
+
+
+def failed_check_recovery_prompt(pr: dict[str, Any]) -> str:
+    number = pr.get("number")
+    sha = (pr.get("head") or {}).get("sha") or ""
+    marker = f"<!-- {ROUTER_MARKER} action=failed-check sha={sha} -->"
+    check_lines: list[str] = []
+    for check_run in failed_check_runs(pr)[:8]:
+        name = check_run_display_name(check_run)
+        conclusion = str(check_run.get("conclusion") or "failure")
+        url = str(check_run.get("details_url") or check_run.get("html_url") or "")
+        run_id = check_run_run_id(check_run)
+        detail = f"details: {url}" if url else f"run_id: {run_id}" if run_id else "details: unavailable"
+        check_lines.append(f"- `{name}`: {conclusion}; {detail}")
+    checks_block = "\n".join(check_lines) if check_lines else "- failed check details unavailable"
+
+    return (
+        f"{marker}\n\n"
+        f"Jules, PR #{number} has failed GitHub Actions checks on SHA `{sha}`. "
+        "Исправь этот же PR; не открывай новый PR и не создавай follow-up задачу.\n\n"
+        "Failed checks:\n"
+        f"{checks_block}\n\n"
+        "Что нужно сделать:\n"
+        "- открой/read linked job logs и артефакты failed checks;\n"
+        "- если лог не содержит конкретных файлов, воспроизведи failing command локально в PR branch;\n"
+        "- для Go formatting failures выполни `files=\"$(gofmt -l .)\"; if [ -n \"$files\" ]; then printf 'gofmt required for:\\n%s\\n' \"$files\"; fi`;\n"
+        "- исправь причину failure внутри scope текущей задачи и allowed_paths;\n"
+        "- обнови AUTONOMOUS_TASK_EVIDENCE/agent_tasks.json только если статус задачи реально изменился;\n"
+        "- push исправление в эту же PR ветку и дождись повторных checks;\n"
+        "- если failure требует секрета, production-доступа или действия вне scope, отметь задачу `blocked` с concrete blocked_reason.\n\n"
+        "Не жди ответа пользователя, если исправление безопасное и находится внутри scope."
     )
 
 
@@ -950,6 +1010,39 @@ def plan_recovery_actions(
                         reason=f"Automerge workflow failed for PR #{number} without a blocking label",
                         ttl_minutes=RERUN_AUTOMERGE_COOLDOWN_MINUTES,
                         payload={"run_id": failed_run_id},
+                    )
+                )
+                return actions
+
+        failed_checks = failed_check_runs(pr)
+        if failed_checks:
+            if has_pending_checks(pr):
+                return actions
+            fingerprint = failed_check_fingerprint(pr)
+            dedupe_key = f"failed-check-recovery:{number}:{sha}:{fingerprint}"
+            marker = f"{ROUTER_MARKER} action=failed-check sha={sha}"
+            has_marker = comments_contain(pr, marker)
+            if not action_recently_done(
+                ledger,
+                dedupe_key,
+                now=now,
+                ttl_minutes=FAILED_CHECK_RECOVERY_COOLDOWN_MINUTES,
+            ) and (
+                not has_marker or extract_session_id_from_pr(pr)
+            ):
+                prompt = failed_check_recovery_prompt(pr)
+                actions.append(
+                    RecoveryAction(
+                        type="failed_check_recovery",
+                        dedupe_key=dedupe_key,
+                        reason=f"PR #{number} has failed checks without an active quality-fix label",
+                        ttl_minutes=FAILED_CHECK_RECOVERY_COOLDOWN_MINUTES,
+                        payload={
+                            "pr_number": number,
+                            "body": prompt,
+                            "comment_needed": not has_marker,
+                            "session_id": extract_session_id_from_pr(pr),
+                        },
                     )
                 )
                 return actions
@@ -1471,7 +1564,7 @@ def execute_action(
 ) -> None:
     payload = action.payload
     jules_clients = jules_clients or []
-    if action.type in {"quality_fix_recovery", "conflict_recovery"}:
+    if action.type in {"quality_fix_recovery", "conflict_recovery", "failed_check_recovery"}:
         if payload.get("comment_needed", True):
             client.request(
                 "POST",

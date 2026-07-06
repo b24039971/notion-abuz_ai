@@ -564,6 +564,33 @@ New task ids:
             ],
         )
 
+    def test_failed_check_recovery_execution_comments_and_messages_jules(self) -> None:
+        action = router.RecoveryAction(
+            type="failed_check_recovery",
+            dedupe_key="failed-check-recovery:10:abc123:fingerprint",
+            reason="failed checks",
+            ttl_minutes=router.FAILED_CHECK_RECOVERY_COOLDOWN_MINUTES,
+            payload={
+                "pr_number": 10,
+                "body": "fix failed checks",
+                "comment_needed": True,
+                "session_id": "1234567890123456789",
+            },
+        )
+        client = FakeGitHubClient([{}])
+        jules_clients = [object()]
+
+        with patch.object(router, "jules_request_any") as send:
+            router.execute_action(client, action, jules_clients=jules_clients)
+
+        self.assertEqual(client.calls, [("POST", f"/repos/{REPO}/issues/10/comments")])
+        send.assert_called_once_with(
+            jules_clients,
+            "POST",
+            "sessions/1234567890123456789:sendMessage",
+            {"prompt": "fix failed checks"},
+        )
+
     def test_quality_fix_waits_for_pending_checks_on_new_head(self) -> None:
         actions = plan(
             state(
@@ -709,6 +736,91 @@ Blocking reasons:
         self.assertEqual(len(actions), 1)
         self.assertEqual(actions[0].type, "rerun_workflow")
         self.assertEqual(actions[0].payload["run_id"], "12345")
+
+    def test_failed_automerge_after_rerun_prompts_jules_with_failed_check_context(self) -> None:
+        ledger = {
+            "version": 1,
+            "actions": {
+                "rerun-automerge:10:abc123:12345": {
+                    "time": (NOW - timedelta(minutes=5)).isoformat().replace("+00:00", "Z"),
+                    "type": "rerun_workflow",
+                }
+            },
+        }
+        actions = plan(
+            state(
+                open_pulls=[
+                    pr(
+                        labels=["jules"],
+                        check_runs=[
+                            {
+                                "name": "test-and-merge",
+                                "workflowName": "1. Auto-Validate and Merge Jules PRs",
+                                "status": "completed",
+                                "conclusion": "failure",
+                                "details_url": "https://github.com/o/r/actions/runs/12345/job/9",
+                            }
+                        ],
+                    )
+                ]
+            ),
+            ledger=ledger,
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "failed_check_recovery")
+        self.assertEqual(actions[0].payload["pr_number"], 10)
+        self.assertEqual(actions[0].payload["session_id"], "1234567890123456789")
+        self.assertIn("Failed checks:", actions[0].payload["body"])
+        self.assertIn("1. Auto-Validate and Merge Jules PRs / test-and-merge", actions[0].payload["body"])
+        self.assertIn("https://github.com/o/r/actions/runs/12345/job/9", actions[0].payload["body"])
+        self.assertIn("gofmt required for:", actions[0].payload["body"])
+
+    def test_failed_ci_check_prompts_jules_without_waiting_for_automerge_rerun(self) -> None:
+        actions = plan(
+            state(
+                open_pulls=[
+                    pr(
+                        labels=["jules"],
+                        check_runs=[
+                            {
+                                "name": "validate",
+                                "workflowName": "CI",
+                                "status": "completed",
+                                "conclusion": "failure",
+                                "details_url": "https://github.com/o/r/actions/runs/222/job/3",
+                            }
+                        ],
+                    )
+                ]
+            )
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "failed_check_recovery")
+        self.assertIn("CI / validate", actions[0].payload["body"])
+
+    def test_failed_check_recovery_waits_for_pending_checks(self) -> None:
+        actions = plan(
+            state(
+                open_pulls=[
+                    pr(
+                        labels=["jules"],
+                        check_runs=[
+                            {
+                                "name": "validate",
+                                "workflowName": "CI",
+                                "status": "completed",
+                                "conclusion": "failure",
+                            },
+                            {"name": "test-and-merge", "status": "in_progress"},
+                        ],
+                    )
+                ]
+            )
+        )
+
+        self.assertEqual(actions, [])
 
     def test_selected_task_beats_stale_unattended_monitor(self) -> None:
         actions = plan(
