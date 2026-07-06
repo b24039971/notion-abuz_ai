@@ -2802,3 +2802,52 @@ func TestIsSuggestionMode(t *testing.T) {
 		})
 	}
 }
+
+func TestToolSchemaJSONTruncatedExtremelySmallLimit(t *testing.T) {
+	// Reset the metric exactly once at the beginning of the test
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	// Override limit for test and restore after
+	originalLimit := toolSchemaTruncationLimit
+	toolSchemaTruncationLimit = 0
+	defer func() {
+		toolSchemaTruncationLimit = originalLimit
+	}()
+
+	schema := map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"prop": "value",
+		},
+	}
+
+	tools := []Tool{
+		{
+			Type: "function",
+			Function: ToolFunction{
+				Name:       "test_tool_small_limit",
+				Parameters: schema,
+			},
+		},
+	}
+
+	out := buildToolList(tools)
+
+	if !strings.Contains(out, "...") {
+		t.Errorf("Expected truncated string with '...', got: %s", out)
+	}
+
+	if !utf8.ValidString(out) {
+		t.Errorf("Truncated string is not valid UTF-8: %s", out)
+	}
+
+	contextLossMetricsMu.Lock()
+	count, exists := contextLossMetrics["tool_schema_json_truncated"]
+	contextLossMetricsMu.Unlock()
+
+	if !exists || count != 1 {
+		t.Errorf("Expected tool_schema_json_truncated metric to be 1, got %d (exists: %v)", count, exists)
+	}
+}

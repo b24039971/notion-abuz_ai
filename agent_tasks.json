@@ -5501,7 +5501,7 @@
     },
     {
       "id": "proxy-tools-schema-json-truncation-robustness-fallback-limit",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test to verify tool schema JSON truncation limits when limit is extremely small",
@@ -5513,6 +5513,21 @@
       "acceptance": [
         "Verify a test covers JSON truncation limits and edge cases",
         "Ensure boundary check avoids panics with small limits"
+      ]
+    },
+    {
+      "id": "proxy-tools-schema-negative-limit-test",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add negative boundary test for tool schema limit",
+      "description": "Add a test validating that negative tool schema truncation limits map to 0 without panicking",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go"
+      ],
+      "acceptance": [
+        "Verify negative limit produces valid truncated string"
       ]
     }
   ]

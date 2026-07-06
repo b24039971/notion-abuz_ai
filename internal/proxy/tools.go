@@ -23,6 +23,8 @@ var (
 
 	sessionFallbackMetricsMu sync.Mutex
 	sessionFallbackMetrics   = make(map[string]int)
+
+	toolSchemaTruncationLimit = 4000
 )
 
 func recordSessionFallbackMetric(reason string) {
@@ -187,10 +189,14 @@ func buildToolList(tools []Tool) string {
 			simplified := simplifyToolSchema(t.Function.Parameters)
 			params, _ := json.Marshal(simplified)
 			paramsStr := string(params)
-			if runes := []rune(paramsStr); len(runes) > 4000 {
+			limit := toolSchemaTruncationLimit
+			if limit < 0 {
+				limit = 0
+			}
+			if runes := []rune(paramsStr); len(runes) > limit {
 				recordContextLossMetric("tool_schema_json_truncated")
-				log.Printf("[bridge] diagnostic: truncated large tool schema json string (len=%d runes) to 4000 runes to prevent OOM/token bloat", len(runes))
-				paramsStr = string(runes[:4000]) + "..."
+				log.Printf("[bridge] diagnostic: truncated large tool schema json string (len=%d runes) to %d runes to prevent OOM/token bloat", len(runes), limit)
+				paramsStr = string(runes[:limit]) + "..."
 			}
 			sb.WriteString(fmt.Sprintf("\nParameters: %s", paramsStr))
 		}
