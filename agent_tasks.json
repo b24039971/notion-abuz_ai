@@ -5642,7 +5642,7 @@
     },
     {
       "id": "proxy-tools-test-compact-tool-list-unicode-truncation",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test for buildCompactToolList description unicode truncation",
@@ -5670,6 +5670,21 @@
       ],
       "acceptance": [
         "Add test TestBuildToolList_EmptyParameters that verifies the output when tool.Function.Parameters is nil"
+      ]
+    },
+    {
+      "id": "proxy-tools-add-build-tool-list-empty-description-test",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for buildToolList empty description handling",
+      "description": "Ensure buildToolList formats correctly when tool has no description field, to prevent unexpected string outputs.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Add test TestBuildToolList_EmptyDescription that verifies the output when tool.Function.Description is empty"
       ]
     }
   ]

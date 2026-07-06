@@ -3315,3 +3315,38 @@ func TestBuildToolList_SchemaTruncation_ExactBoundaries(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildCompactToolList_UnicodeTruncation(t *testing.T) {
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	// A description longer than 80 runes using multi-byte unicode characters.
+	// Emojis are typically 4 bytes. We repeat it to exceed the 80 rune limit.
+	desc := strings.Repeat("😃", 81)
+
+	tools := []Tool{
+		{Function: ToolFunction{Name: "Bash", Description: desc}},
+	}
+	res := buildCompactToolList(tools)
+
+	// Expect the string to be truncated to 80 runes + "..."
+	expectedDesc := strings.Repeat("😃", 80) + "..."
+	expected := "- Bash — " + expectedDesc + "\n"
+
+	if res != expected {
+		t.Errorf("Expected truncated result to end with ... and have correct length. Got:\n%q\nExpected:\n%q", res, expected)
+	}
+
+	if !utf8.ValidString(res) {
+		t.Errorf("Truncated string is not valid UTF-8, multi-byte character got corrupted.")
+	}
+
+	contextLossMetricsMu.Lock()
+	count, exists := contextLossMetrics["compact_tool_list_truncated"]
+	contextLossMetricsMu.Unlock()
+
+	if !exists || count != 1 {
+		t.Errorf("Expected compact_tool_list_truncated metric to be 1, got %d (exists: %v)", count, exists)
+	}
+}
