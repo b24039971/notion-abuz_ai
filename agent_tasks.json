@@ -5364,7 +5364,7 @@
     },
     {
       "id": "proxy-tool-schema-simplification-json-arrays-truncation-metrics-test-followup",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Investigate additional unicode safety boundaries for tool_schema_json_truncated",
@@ -5376,6 +5376,22 @@
       ],
       "acceptance": [
         "Verify a new test is added for multi-byte combos."
+      ]
+    },
+    {
+      "id": "proxy-tools-test-clean-up-extra-newlines-followup",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for cleaning up extra newlines",
+      "description": "Ensure there is a test that checks cleanup of extra newlines",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Verify a test for newline cleanup is added"
       ]
     }
   ]

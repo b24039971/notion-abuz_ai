@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 	"testing"
+	"unicode/utf8"
 )
 
 func TestParseToolCalls_NestedObjects(t *testing.T) {
@@ -2554,6 +2555,65 @@ func TestExactly801RunesUnicode(t *testing.T) {
 
 	if !strings.Contains(out, "...") {
 		t.Errorf("Expected truncated string with '...', got: %s", out)
+	}
+
+	contextLossMetricsMu.Lock()
+	count, exists := contextLossMetrics["tool_schema_json_truncated"]
+	contextLossMetricsMu.Unlock()
+
+	if !exists || count != 1 {
+		t.Errorf("Expected tool_schema_json_truncated metric to be 1, got %d (exists: %v)", count, exists)
+	}
+}
+
+func TestToolSchemaJSONTruncatedMultiByteCombos(t *testing.T) {
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	// Mix of ASCII and multi-byte UTF-8 to test boundaries
+	multiByteStr := "aабвгдe" // 1+5+1 = 7 runes
+
+	base := `{"properties":{"prop":"`
+	end := `"},"type":"object"}`
+	target := 4010
+
+	baseRunes := len([]rune(base))
+	endRunes := len([]rune(end))
+	remainingRunes := target - baseRunes - endRunes
+
+	// Repeat multiByteStr to fill the remaining runes
+	repeats := remainingRunes / len([]rune(multiByteStr))
+	s := strings.Repeat(multiByteStr, repeats)
+	// Add remaining single chars
+	leftover := remainingRunes % len([]rune(multiByteStr))
+	s += string([]rune(multiByteStr)[:leftover])
+
+	schema := map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"prop": s,
+		},
+	}
+
+	tools := []Tool{
+		{
+			Type: "function",
+			Function: ToolFunction{
+				Name:       "test_tool_multibyte",
+				Parameters: schema,
+			},
+		},
+	}
+
+	out := buildToolList(tools)
+
+	if !strings.Contains(out, "...") {
+		t.Errorf("Expected truncated string with '...', got: %s", out)
+	}
+
+	if !utf8.ValidString(out) {
+		t.Errorf("Truncated string is not valid UTF-8: %s", out)
 	}
 
 	contextLossMetricsMu.Lock()
