@@ -268,6 +268,11 @@ func TestStripClaudeCodeInstructions_PreservesCodingIntent(t *testing.T) {
 			input: "Here is context <subagent>write a test</subagent>",
 			want:  "Here is context write a test",
 		},
+		{
+			name:  "cleans up extra newlines left by tag removal",
+			input: "Hello\n\n<system-reminder>\nsome internal logic\n</system-reminder>\n\n\nWorld",
+			want:  "Hello\n\nWorld",
+		},
 	}
 
 	for _, tt := range tests {

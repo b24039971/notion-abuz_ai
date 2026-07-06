@@ -521,11 +521,13 @@ func sanitizeForBridge(messages []ChatMessage) []ChatMessage {
 var (
 	blockTagRegex  = regexp.MustCompile(`(?s)<(?:system-reminder|local-command-caveat|available-deferred-tools)>.*?</(?:system-reminder|local-command-caveat|available-deferred-tools)>`)
 	inlineTagRegex = regexp.MustCompile(`</?(?:command-name|file|package|mcp-server|project-instructions|hook-reminder|subagent-task|subagent|inner|other|hook|command)(?:\s+[^>]*?)?>`)
+	newlinesRegex  = regexp.MustCompile(`\n{3,}`)
 )
 
 func stripClaudeCodeInstructions(content string) string {
 	content = blockTagRegex.ReplaceAllString(content, "")
 	content = inlineTagRegex.ReplaceAllString(content, "")
+	content = newlinesRegex.ReplaceAllString(content, "\n\n")
 	return strings.TrimSpace(content)
 }
 

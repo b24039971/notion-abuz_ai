@@ -5380,7 +5380,7 @@
     },
     {
       "id": "proxy-tools-test-clean-up-extra-newlines-followup",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test for cleaning up extra newlines",
@@ -5392,6 +5392,22 @@
       ],
       "acceptance": [
         "Verify a test for newline cleanup is added"
+      ]
+    },
+    {
+      "id": "proxy-tools-strip-claude-code-newlines-edge-case-test",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add an edge-case test for Claude Code stripping extra newlines at start and end of strings",
+      "description": "Ensure there is a test that checks cleanup of extra newlines explicitly placed at the beginning and end of a Claude Code block",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Verify an edge-case test for newline cleanup is added at string boundaries"
       ]
     }
   ]
