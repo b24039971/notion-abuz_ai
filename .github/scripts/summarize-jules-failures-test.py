@@ -99,6 +99,22 @@ class JulesFailureRecoveryTest(unittest.TestCase):
         self.assertEqual(decision.action, "block")
         self.assertIn("stale-feedback", decision.reason)
 
+    def test_repeated_stale_feedback_blocks_already_blocked_task(self) -> None:
+        decision = module.decide_recovery(
+            manifest("blocked"),
+            [
+                module.FailedSession(
+                    session_id="s1",
+                    task_id="task-one",
+                    failure_kind="repeated_stale_feedback",
+                )
+            ],
+        )
+
+        self.assertEqual(decision.action, "block")
+        self.assertEqual(decision.task_id, "task-one")
+        self.assertEqual(decision.session_id, "s1")
+
     def test_two_failed_sessions_block(self) -> None:
         decision = module.decide_recovery(
             manifest(),
