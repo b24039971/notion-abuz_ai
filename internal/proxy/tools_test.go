@@ -3430,3 +3430,57 @@ func TestLegacyCollapse_DroppedLinesMetrics(t *testing.T) {
 		t.Errorf("Expected truncation log to indicate %q, but got: %q", expectedLog, buf.String())
 	}
 }
+
+func TestBuildSessionChainContinuation_Truncation(t *testing.T) {
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	// Build a string that exceeds 4000 runes and contains newlines and multibyte chars in the dropped part
+	baseStr := strings.Repeat("a", 4000)
+	droppedStr := "b\n🚀\nc\n" // 3 newlines, 1 multibyte rune (🚀 is 1 rune, 4 bytes), 2 chars (b, c) -> total 6 runes. b, \n, 🚀, \n, c, \n => 1+1+1+1+1+1 = 6 runes
+	content := baseStr + droppedStr
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "Start"},
+		{Role: "assistant", Content: "Plan", ToolCalls: []ToolCall{{ID: "call_1", Function: ToolCallFunction{Name: "Bash", Arguments: "{}"}}}},
+		{Role: "tool", ToolCallID: "call_1", Name: "Bash", Content: content},
+	}
+
+	resMessages := buildSessionChainContinuation(messages, "Bash", "")
+
+	logOutput := buf.String()
+	expectedLogPart := "diagnostic: multi-turn continuation truncated Bash output (original: 4006 chars, limit: 4000 chars, dropped 3 lines)"
+	if !strings.Contains(logOutput, expectedLogPart) {
+		t.Errorf("Expected log to contain %q, but got %q", expectedLogPart, logOutput)
+	}
+
+	contextLossMetricsMu.Lock()
+	count, exists := contextLossMetrics["tool_continuation_truncated"]
+	contextLossMetricsMu.Unlock()
+
+	if !exists || count != 1 {
+		t.Errorf("Expected tool_continuation_truncated metric to be 1, got %d (exists: %v)", count, exists)
+	}
+
+	// Find the result to ensure it has valid UTF-8
+	found := false
+	for _, m := range resMessages {
+		if m.Role == "user" && strings.Contains(m.Content, "Bash") {
+			if !utf8.ValidString(m.Content) {
+				t.Errorf("Content is not valid UTF-8")
+			}
+			found = true
+			if !strings.Contains(m.Content, "... (truncated)") {
+				t.Errorf("Content does not contain truncation suffix")
+			}
+		}
+	}
+	if !found {
+		t.Errorf("Did not find the expected continuation message")
+	}
+}

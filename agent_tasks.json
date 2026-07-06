@@ -6010,7 +6010,7 @@
     },
     {
       "id": "proxy-runtime-tool-continuation-truncation-metrics",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test coverage for multi-turn continuation truncation events",
@@ -6042,6 +6042,24 @@
         "Add log and metric",
         "Test this metric",
         "Mark as done"
+      ]
+    },
+    {
+      "id": "proxy-runtime-session-continuation-read-narrowing-observability",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add metric observability and tests for Read narrowing heuristic in session continuation",
+      "description": "The multi-turn continuation loop has a heuristic `if name == \"Read\" && strings.Contains(content, \"exceeds maximum allowed tokens\") { needsReadNarrowing = true }` but lacks a distinct metric to observe how often Claude Code bridge hits this condition. Add metric `session_continuation_read_narrowing` and corresponding tests.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Add `recordContextLossMetric(\"session_continuation_read_narrowing\")` (or similar metric map) when the Read truncation heuristic triggers.",
+        "Add exact test coverage asserting the metric increments during a multi-turn continuation with the target error string.",
+        "Update manifest to mark this task as done."
       ]
     }
   ]
