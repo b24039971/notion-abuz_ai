@@ -2256,6 +2256,10 @@ func TestBuildToolList_SchemaTruncation(t *testing.T) {
 		t.Errorf("expected schema to be truncated")
 	}
 
+	if !utf8.ValidString(result) {
+		t.Errorf("Truncated string is not valid UTF-8")
+	}
+
 	contextLossMetricsMu.Lock()
 	count, exists := contextLossMetrics["tool_schema_json_truncated"]
 	contextLossMetricsMu.Unlock()
@@ -2378,7 +2382,11 @@ func TestSimplifyToolSchemaJSONTruncation_CommaOkAssertion(t *testing.T) {
 		},
 	}
 
-	buildToolList(tools)
+	out := buildToolList(tools)
+
+	if !utf8.ValidString(out) {
+		t.Errorf("Truncated string is not valid UTF-8: %s", out)
+	}
 
 	contextLossMetricsMu.Lock()
 	count, exists := contextLossMetrics["tool_schema_json_truncated"]
@@ -2565,6 +2573,10 @@ func TestExactly801RunesUnicode(t *testing.T) {
 
 	if !strings.Contains(out, "...") {
 		t.Errorf("Expected truncated string with '...', got: %s", out)
+	}
+
+	if !utf8.ValidString(out) {
+		t.Errorf("Truncated string is not valid UTF-8")
 	}
 
 	contextLossMetricsMu.Lock()

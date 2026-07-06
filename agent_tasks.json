@@ -45,7 +45,7 @@
   "tasks": [
     {
       "id": "proxy-tools-schema-json-truncation-test",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for tool schema JSON truncation metric",
@@ -5444,6 +5444,24 @@
         "Verify tests check for suggestion strings with [SUGGESTION MODE: prefix",
         "Verify tests check that strings without the prefix return false",
         "Verify that whitespaces before the prefix do not affect the result"
+      ]
+    },
+    {
+      "id": "proxy-tools-schema-json-truncation-unicode-boundary-test",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add bounds testing for exact 4000 byte multibyte character truncation",
+      "description": "Ensure metric truncates exactly correctly at 4000 boundary across multi-byte character limits without panicking.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Verify a test checks 4000 multi-byte boundary explicitly",
+        "Ensure the string uses comma-ok",
+        "Ensure the text uses utf8.ValidString"
       ]
     }
   ]
