@@ -5712,7 +5712,7 @@
     },
     {
       "id": "automation-health-quality-failures-spike-6e14b562",
-      "status": "todo",
+      "status": "blocked",
       "area": "automation",
       "risk": "medium",
       "title": "Fix automation health finding: quality_failures_spike",
@@ -5730,7 +5730,8 @@
       "health_finding_hash": "6e14b562858e",
       "health_finding_code": "quality_failures_spike",
       "health_finding_severity": "critical",
-      "health_report_generated_at": "2026-07-06T09:03:26Z"
+      "health_report_generated_at": "2026-07-06T09:03:26Z",
+      "blocked_reason": "The root cause in automation health script requires modifying .github/scripts/automation-health-report.py, which is not in the allowed_paths for this task."
     },
     {
       "id": "automation-health-agent-tasks-conflicting-open-pr-1bb636b3",
