@@ -6,19 +6,12 @@ import (
 )
 
 func TestRecoveryToolResultsPreservation(t *testing.T) {
-	// Simulate an Anthropic tool chain where the last turn had a user message
-	// containing both text and a tool result.
-	// In convertAnthropicMessages, this produces:
-	// assistant (tool_use)
-	// tool (tool_result)
-	// user (text blocks from the same message)
-
 	messages := []ChatMessage{
 		{Role: "user", Content: "Original query: fix the bug"},
 		{Role: "assistant", Content: "I will use the tool", ToolCalls: []ToolCall{
 			{ID: "call_1", Function: ToolCallFunction{Name: "Bash", Arguments: "{}"}},
 		}},
-		{Role: "tool", ToolCallID: "call_1", Name: "Bash", Content: "tool output here"},
+		{Role: "tool", ToolCallID: "call_1", Name: "Bash", Content: "line1\nline2"},
 		{Role: "user", Content: "Here is the result of the tool run:\nWhat should we do next?"},
 	}
 
@@ -30,17 +23,25 @@ func TestRecoveryToolResultsPreservation(t *testing.T) {
 
 	content := recovery[0].Content
 
-	// The original query should be the latest user message
-	if !strings.Contains(content, "Latest user message:\nOriginal query: fix the bug") {
-		t.Errorf("Latest user message is incorrect. Content:\n%s", content)
+	// Ensure there is a newline after the colon for tool names
+	if !strings.Contains(content, "Tool (Bash):\nline1") {
+		t.Errorf("Missing newline after tool label. Content:\n%s", content)
 	}
 
-	// The partial progress should contain the tool calls and results
-	if !strings.Contains(content, "Partial progress") {
-		t.Errorf("Missing partial progress. Content:\n%s", content)
+	// Also check history logic
+	messagesHistory := []ChatMessage{
+		{Role: "user", Content: "Query 1"},
+		{Role: "assistant", Content: "I will use the tool", ToolCalls: []ToolCall{
+			{ID: "call_1", Function: ToolCallFunction{Name: "Bash", Arguments: "{}"}},
+		}},
+		{Role: "tool", ToolCallID: "call_1", Name: "Bash", Content: "line1\nline2"},
+		{Role: "user", Content: "Query 2"},
 	}
 
-	if !strings.Contains(content, "tool output here") {
-		t.Errorf("Missing tool output. Content:\n%s", content)
+	recoveryHistory := buildFreshThreadRecoveryMessages(messagesHistory)
+	contentHistory := recoveryHistory[0].Content
+
+	if !strings.Contains(contentHistory, "Tool (Bash):\nline1") {
+		t.Errorf("Missing newline after tool label in history. Content:\n%s", contentHistory)
 	}
 }

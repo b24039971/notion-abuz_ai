@@ -551,7 +551,7 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 			history.WriteString("\n\n")
 		}
 		history.WriteString(reversed[i].label)
-		history.WriteString(": ")
+		history.WriteString(":\n")
 		history.WriteString(reversed[i].content)
 	}
 
@@ -579,7 +579,7 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 		prompt.WriteString("\n\nPartial progress since the latest user message:\n")
 		for i := len(trailingReversed) - 1; i >= 0; i-- {
 			prompt.WriteString(trailingReversed[i].label)
-			prompt.WriteString(": ")
+			prompt.WriteString(":\n")
 			prompt.WriteString(trailingReversed[i].content)
 			if i > 0 {
 				prompt.WriteString("\n\n")

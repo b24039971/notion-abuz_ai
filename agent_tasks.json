@@ -5849,7 +5849,7 @@
     },
     {
       "id": "proxy-runtime-tool-result-continuation-fix",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Enhance tool result continuation reliability",

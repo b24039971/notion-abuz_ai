@@ -73,8 +73,8 @@ func TestBuildFreshThreadRecoveryMessagesCollapsesHistory(t *testing.T) {
 		"System instructions:",
 		"Answer in Chinese.",
 		"Conversation context:",
-		"User: opus4.6什么时候推出的",
-		"Assistant: Claude Opus 4.6 在 2026 年 2 月推出。",
+		"User:\nopus4.6什么时候推出的",
+		"Assistant:\nClaude Opus 4.6 在 2026 年 2 月推出。",
 		"Latest user message:\nsonnet有什么优势",
 	} {
 		if !strings.Contains(body, want) {
@@ -105,8 +105,8 @@ func TestBuildToolBridgeRecoveryMessagesSkipsIdentityDriftAssistantText(t *testi
 		"System instructions:",
 		"Answer in Chinese.",
 		"Conversation context:",
-		"User: 修改 internal/web/dist/assets/index-DlVudHMF.js",
-		"Tool (Grep): Found 1 file\ninternal/web/dist/assets/index-DlVudHMF.js",
+		"User:\n修改 internal/web/dist/assets/index-DlVudHMF.js",
+		"Tool (Grep):\nFound 1 file\ninternal/web/dist/assets/index-DlVudHMF.js",
 		"Latest user message:\n你来动手",
 	} {
 		if !strings.Contains(body, want) {
@@ -136,7 +136,7 @@ func TestBuildToolBridgeRecoveryMessagesSkipsToolCallRefusal(t *testing.T) {
 		"System instructions:",
 		"System prompt",
 		"Conversation context:",
-		"User: Run tests in internal/proxy",
+		"User:\nRun tests in internal/proxy",
 		"Latest user message:\njust do it",
 	} {
 		if !strings.Contains(body, want) {
@@ -166,7 +166,7 @@ func TestBuildToolBridgeRecoveryMessagesSkipsJSONModeLoss(t *testing.T) {
 		"System instructions:",
 		"System prompt",
 		"Conversation context:",
-		"User: Edit the file.",
+		"User:\nEdit the file.",
 		"Latest user message:\nfix it",
 	} {
 		if !strings.Contains(body, want) {
