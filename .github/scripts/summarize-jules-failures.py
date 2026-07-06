@@ -189,6 +189,18 @@ def decide_recovery(
                     "without opening a PR or unblocking itself"
                 ),
             )
+        if session.failure_kind == "repeated_stale_in_progress":
+            return RecoveryDecision(
+                action="block",
+                task_id=session.task_id,
+                session_id=session.session_id,
+                sessions=sessions_for_task,
+                count_for_task=count_for_task,
+                reason=(
+                    "Jules session stayed IN_PROGRESS after repeated autonomous "
+                    "recovery prompts without opening a PR or producing progress"
+                ),
+            )
         if status != "todo":
             if not not_todo_decision:
                 not_todo_decision = RecoveryDecision(

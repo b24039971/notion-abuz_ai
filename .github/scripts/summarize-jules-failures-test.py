@@ -115,6 +115,21 @@ class JulesFailureRecoveryTest(unittest.TestCase):
         self.assertEqual(decision.task_id, "task-one")
         self.assertEqual(decision.session_id, "s1")
 
+    def test_repeated_stale_in_progress_blocks_task(self) -> None:
+        decision = module.decide_recovery(
+            manifest(),
+            [
+                module.FailedSession(
+                    session_id="s1",
+                    task_id="task-one",
+                    failure_kind="repeated_stale_in_progress",
+                )
+            ],
+        )
+
+        self.assertEqual(decision.action, "block")
+        self.assertIn("IN_PROGRESS", decision.reason)
+
     def test_two_failed_sessions_block(self) -> None:
         decision = module.decide_recovery(
             manifest(),

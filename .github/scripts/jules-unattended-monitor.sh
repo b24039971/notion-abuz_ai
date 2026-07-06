@@ -7,6 +7,8 @@ LOOKBACK_HOURS="${LOOKBACK_HOURS:-24}"
 MIN_USER_REPLY_INTERVAL_MINUTES="${MIN_USER_REPLY_INTERVAL_MINUTES:-2}"
 STALE_AWAITING_FEEDBACK_MINUTES="${STALE_AWAITING_FEEDBACK_MINUTES:-10}"
 MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS="${MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS:-2}"
+STALE_IN_PROGRESS_MINUTES="${STALE_IN_PROGRESS_MINUTES:-45}"
+MAX_STALE_IN_PROGRESS_ESCALATIONS="${MAX_STALE_IN_PROGRESS_ESCALATIONS:-2}"
 
 if [ -z "${JULES_API_KEY:-}" ] && [ -z "${JULES_API_KEY_BACKUP:-}" ]; then
   echo "::warning::No Jules API keys configured; unattended monitor cannot inspect sessions."
@@ -49,13 +51,16 @@ now_epoch="$(date -u +%s)"
 cutoff_epoch="$((now_epoch - LOOKBACK_HOURS * 3600))"
 reply_cooldown_seconds="$((MIN_USER_REPLY_INTERVAL_MINUTES * 60))"
 stale_feedback_seconds="$((STALE_AWAITING_FEEDBACK_MINUTES * 60))"
-max_stale_escalations="$MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS"
+stale_in_progress_seconds="$((STALE_IN_PROGRESS_MINUTES * 60))"
+max_stale_feedback_escalations="$MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS"
+max_stale_in_progress_escalations="$MAX_STALE_IN_PROGRESS_ESCALATIONS"
 
 active_sessions=0
 touched_sessions=0
 api_available=false
 session_ids=()
 stale_waiting_sessions=()
+stale_in_progress_sessions=()
 wait_reason_details=()
 prompt_action_details=()
 prompt_task_id_details=()
@@ -167,6 +172,7 @@ build_recovery_prompt() {
   local mode="$3"
   local stale_reason="$4"
   local out="$5"
+  local max_attempts="${6:-$max_stale_feedback_escalations}"
 
   python3 .github/scripts/jules_recovery_prompt.py \
     --activities "$activities_file" \
@@ -174,13 +180,14 @@ build_recovery_prompt() {
     --task-id "$task_id" \
     --mode "$mode" \
     --stale-reason "$stale_reason" \
-    --max-continue-attempts "$max_stale_escalations" \
+    --max-continue-attempts "$max_attempts" \
     > "$out"
 }
 
 record_prompt_detail() {
   local session_id="$1"
   local prompt_json="$2"
+  local max_attempts="${3:-$max_stale_feedback_escalations}"
   local wait_reason
   local prompt_action
   local prompt_task_id
@@ -196,7 +203,7 @@ record_prompt_detail() {
   if [ -n "$prompt_task_id" ]; then
     prompt_task_id_details+=("${session_id}:${prompt_task_id}")
   fi
-  continue_attempt_details+=("${session_id}:${continue_attempts}/${max_stale_escalations}")
+  continue_attempt_details+=("${session_id}:${continue_attempts}/${max_attempts}")
 }
 
 session_epoch_filter='
@@ -224,6 +231,7 @@ for i in "${!key_labels[@]}"; do
   while IFS= read -r session_json; do
     session_name="$(jq -r '.name' <<<"$session_json")"
     session_state="$(jq -r '.state // "STATE_UNSPECIFIED"' <<<"$session_json")"
+    session_update_epoch="$(jq -r '((.updateTime // .createTime // "1970-01-01T00:00:00Z") | sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601? // 0)' <<<"$session_json")"
 
     if [ -z "$session_name" ] || [ "$session_name" = "null" ]; then
       continue
@@ -284,6 +292,113 @@ for i in "${!key_labels[@]}"; do
     fi
 
     if [ "$session_state" != "AWAITING_USER_FEEDBACK" ]; then
+      if [ "$session_state" = "IN_PROGRESS" ]; then
+        activities_file="${tmpdir}/activities-${session_name//\//-}.json"
+        if ! jules_get "$key" "${session_name}/activities?pageSize=30" "$activities_file"; then
+          echo "::warning::Could not list activities for ${session_name}; stale in-progress recovery skipped."
+          record_active_task_id "$active_task_id"
+          continue
+        fi
+
+        prompt_json="${tmpdir}/prompt-${session_name//\//-}.json"
+        if ! build_recovery_prompt \
+          "$activities_file" \
+          "$active_task_id" \
+          "stale" \
+          "Jules session stayed IN_PROGRESS without recent activity" \
+          "$prompt_json" \
+          "$max_stale_in_progress_escalations"; then
+          echo "::warning::Could not build stale in-progress recovery prompt for ${session_name}; skipping."
+          record_active_task_id "$active_task_id"
+          continue
+        fi
+
+        latest_agent_epoch="$(jq -r '.summary.latest_agent_epoch // 0' "$prompt_json")"
+        last_user_epoch="$(jq -r '.summary.latest_user_epoch // 0' "$prompt_json")"
+        latest_token_epoch="$(jq -r '.summary.latest_token_epoch // 0' "$prompt_json")"
+        continue_token_count="$(jq -r '.summary.continue_token_count // 0' "$prompt_json")"
+        continue_token_count="${continue_token_count:-0}"
+        prompt_task_id="$(jq -r '.task_id // ""' "$prompt_json")"
+        if [ -z "$active_task_id" ] && [ -n "$prompt_task_id" ]; then
+          active_task_id="$prompt_task_id"
+        fi
+
+        newest_activity_epoch="$session_update_epoch"
+        for candidate in "$latest_agent_epoch" "$last_user_epoch" "$latest_token_epoch"; do
+          if [ "${candidate:-0}" -gt "$newest_activity_epoch" ]; then
+            newest_activity_epoch="$candidate"
+          fi
+        done
+        idle_age="$((now_epoch - newest_activity_epoch))"
+
+        if [ "${latest_agent_epoch:-0}" -eq 0 ]; then
+          echo "Skipped ${session_name}; no agent activity found for stale in-progress recovery."
+          record_active_task_id "$active_task_id"
+          continue
+        fi
+
+        if [ "$continue_token_count" -ge "$max_stale_in_progress_escalations" ]; then
+          echo "Autonomous in-progress recovery limit reached for ${session_name}; deleting stale session and blocking task."
+          record_prompt_detail "${session_name##*/}" "$prompt_json" "$max_stale_in_progress_escalations"
+          if [ -n "$active_task_id" ]; then
+            printf '%s\t%s\t%s\n' "${session_name##*/}" "$active_task_id" "repeated_stale_in_progress" >> "$failed_sessions_file"
+          fi
+          out="${tmpdir}/delete-${session_name//\//-}.json"
+          if jules_delete "$key" "$session_name" "$out"; then
+            active_sessions=$((active_sessions - 1))
+            touched_sessions=$((touched_sessions + 1))
+            echo "Deleted stale in-progress Jules session ${session_name} after ${continue_token_count} autonomous recovery messages."
+          else
+            echo "::warning::Could not delete stale in-progress Jules session ${session_name}."
+            record_active_task_id "$active_task_id"
+          fi
+          continue
+        fi
+
+        if [ "${latest_token_epoch:-0}" -ge "${latest_agent_epoch:-0}" ]; then
+          token_age="$((now_epoch - latest_token_epoch))"
+          if [ "$token_age" -lt "$stale_in_progress_seconds" ]; then
+            echo "Skipped ${session_name}; in-progress recovery prompt is still fresh (${token_age}s old, stale threshold ${stale_in_progress_seconds}s, continue tokens ${continue_token_count}/${max_stale_in_progress_escalations})."
+            record_prompt_detail "${session_name##*/}" "$prompt_json" "$max_stale_in_progress_escalations"
+            stale_in_progress_sessions+=("${session_name##*/}:${token_age}s/${stale_in_progress_seconds}s:${continue_token_count}/${max_stale_in_progress_escalations}")
+            record_active_task_id "$active_task_id"
+            continue
+          fi
+          echo "Previous in-progress recovery for ${session_name} is stale after $((token_age / 60)) minute(s); sending escalation ${continue_token_count}/${max_stale_in_progress_escalations}."
+          stale_in_progress_sessions+=("${session_name##*/}:stale-token:${continue_token_count}/${max_stale_in_progress_escalations}")
+          if ! build_recovery_prompt \
+            "$activities_file" \
+            "$active_task_id" \
+            "stale" \
+            "previous in-progress autonomous recovery token is stale" \
+            "$prompt_json" \
+            "$max_stale_in_progress_escalations"; then
+            echo "::warning::Could not build stale in-progress escalation prompt for ${session_name}; skipping."
+            record_active_task_id "$active_task_id"
+            continue
+          fi
+        elif [ "$idle_age" -lt "$stale_in_progress_seconds" ]; then
+          echo "Skipped ${session_name}; IN_PROGRESS activity is still fresh (${idle_age}s old, stale threshold ${stale_in_progress_seconds}s)."
+          record_active_task_id "$active_task_id"
+          continue
+        else
+          echo "Detected stale IN_PROGRESS Jules session ${session_name} after $((idle_age / 60)) minute(s); sending dynamic recovery prompt."
+          stale_in_progress_sessions+=("${session_name##*/}:stale:${continue_token_count}/${max_stale_in_progress_escalations}")
+        fi
+
+        record_active_task_id "$active_task_id"
+        record_prompt_detail "${session_name##*/}" "$prompt_json" "$max_stale_in_progress_escalations"
+        prompt="$(jq -r '.prompt // ""' "$prompt_json")"
+        body="$(jq -n --arg prompt "$prompt" '{prompt: $prompt}')"
+        out="${tmpdir}/send-${session_name//\//-}.json"
+        if jules_post "$key" "${session_name}:sendMessage" "$body" "$out"; then
+          echo "Sent dynamic stale in-progress recovery message to ${session_name}."
+          touched_sessions=$((touched_sessions + 1))
+        else
+          echo "::warning::Could not send stale in-progress recovery message to ${session_name}."
+        fi
+        continue
+      fi
       record_active_task_id "$active_task_id"
       continue
     fi
@@ -326,7 +441,7 @@ for i in "${!key_labels[@]}"; do
         record_active_task_id "$active_task_id"
         continue
       fi
-      if [ "$continue_token_count" -ge "$max_stale_escalations" ]; then
+      if [ "$continue_token_count" -ge "$max_stale_feedback_escalations" ]; then
         echo "Autonomous continue limit reached for ${session_name}; deleting stale session and blocking task."
         record_prompt_detail "${session_name##*/}" "$prompt_json"
         if [ -n "$active_task_id" ]; then
@@ -344,14 +459,14 @@ for i in "${!key_labels[@]}"; do
         continue
       fi
       if [ "$token_age" -lt "$stale_feedback_seconds" ]; then
-        echo "Skipped ${session_name}; autonomous continue already answers the latest wait state (${token_age}s old, stale threshold ${stale_feedback_seconds}s, continue tokens ${continue_token_count}/${max_stale_escalations})."
+        echo "Skipped ${session_name}; autonomous continue already answers the latest wait state (${token_age}s old, stale threshold ${stale_feedback_seconds}s, continue tokens ${continue_token_count}/${max_stale_feedback_escalations})."
         record_prompt_detail "${session_name##*/}" "$prompt_json"
-        stale_waiting_sessions+=("${session_name##*/}:${token_age}s/${stale_feedback_seconds}s:${continue_token_count}/${max_stale_escalations}")
+        stale_waiting_sessions+=("${session_name##*/}:${token_age}s/${stale_feedback_seconds}s:${continue_token_count}/${max_stale_feedback_escalations}")
         record_active_task_id "$active_task_id"
         continue
       fi
-      echo "Previous autonomous continue for ${session_name} is stale after $((token_age / 60)) minute(s); sending escalation ${continue_token_count}/${max_stale_escalations}."
-      stale_waiting_sessions+=("${session_name##*/}:stale:${continue_token_count}/${max_stale_escalations}")
+      echo "Previous autonomous continue for ${session_name} is stale after $((token_age / 60)) minute(s); sending escalation ${continue_token_count}/${max_stale_feedback_escalations}."
+      stale_waiting_sessions+=("${session_name##*/}:stale:${continue_token_count}/${max_stale_feedback_escalations}")
       if ! build_recovery_prompt "$activities_file" "$active_task_id" "stale" "latest autonomous continue token is stale" "$prompt_json"; then
         echo "::warning::Could not build stale recovery prompt for ${session_name}; skipping auto-continue."
         record_active_task_id "$active_task_id"
@@ -364,7 +479,7 @@ for i in "${!key_labels[@]}"; do
       continue
     fi
 
-    if [ "$continue_token_count" -ge "$max_stale_escalations" ]; then
+    if [ "$continue_token_count" -ge "$max_stale_feedback_escalations" ]; then
       echo "Autonomous continue limit reached for ${session_name}; deleting repeated feedback session and blocking task."
       record_prompt_detail "${session_name##*/}" "$prompt_json"
       if [ -n "$active_task_id" ]; then
@@ -412,8 +527,10 @@ python3 .github/scripts/summarize-jules-failures.py decide \
 echo "Active recent Jules sessions for ${SOURCE}: ${active_sessions}"
 echo "Touched Jules sessions: ${touched_sessions}"
 echo "Stale waiting Jules sessions: ${#stale_waiting_sessions[@]}"
+echo "Stale in-progress Jules sessions: ${#stale_in_progress_sessions[@]}"
 session_ids_csv="$(IFS=,; echo "${session_ids[*]}")"
 stale_waiting_csv="$(IFS=,; echo "${stale_waiting_sessions[*]}")"
+stale_in_progress_csv="$(IFS=,; echo "${stale_in_progress_sessions[*]}")"
 wait_reason_csv="$(IFS=,; echo "${wait_reason_details[*]}")"
 prompt_action_csv="$(IFS=,; echo "${prompt_action_details[*]}")"
 prompt_task_id_csv="$(IFS=,; echo "${prompt_task_id_details[*]}")"
@@ -426,6 +543,8 @@ continue_attempt_csv="$(IFS=,; echo "${continue_attempt_details[*]}")"
   echo "session_ids=${session_ids_csv}"
   echo "stale_waiting_sessions=${stale_waiting_csv}"
   echo "stale_waiting_count=${#stale_waiting_sessions[@]}"
+  echo "stale_in_progress_sessions=${stale_in_progress_csv}"
+  echo "stale_in_progress_count=${#stale_in_progress_sessions[@]}"
   echo "wait_reason=${wait_reason_csv}"
   echo "prompt_action=${prompt_action_csv}"
   echo "prompt_task_id=${prompt_task_id_csv}"
