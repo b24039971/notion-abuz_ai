@@ -5592,7 +5592,7 @@
     },
     {
       "id": "proxy-tools-test-clean-up-extra-newlines-followup-newline-validation",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test to validate tool schema JSON truncation limit edge cases",
@@ -5622,6 +5622,22 @@
       "acceptance": [
         "Verify a test covers JSON truncation limits and edge cases for negative limits with unicode strings.",
         "Ensure boundary check avoids panics with negative limits."
+      ]
+    },
+    {
+      "id": "proxy-tools-validate-tool-list-format",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Validate tool list string format output",
+      "description": "Ensure the format-based tool list injection maintains correct structure when properties are nested deep within limits.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Test is added that validates output format of tool list matching the old fallback standard format"
       ]
     }
   ]

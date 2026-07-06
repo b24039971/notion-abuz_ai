@@ -3031,3 +3031,126 @@ func TestToolSchemaJSONTruncatedNegativeLimit_MultipleToolsFallback(t *testing.T
 		t.Errorf("Expected context loss metric tool_schema_json_truncated to be 4, got %d (exists=%v)", count, exists)
 	}
 }
+
+func TestBuildToolList_SchemaTruncation_SmallLimits(t *testing.T) {
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	originalLimit := toolSchemaTruncationLimit
+	toolSchemaTruncationLimit = 1
+	defer func() { toolSchemaTruncationLimit = originalLimit }()
+
+	schema := map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"🚀🔥😃👨‍👩‍👧‍👦": map[string]interface{}{
+				"type": "string",
+			},
+		},
+	}
+
+	tools := []Tool{
+		{
+			Type: "function",
+			Function: ToolFunction{
+				Name:       "test_small_limit",
+				Parameters: schema,
+			},
+		},
+	}
+
+	// Test limit 1
+	out1 := buildToolList(tools)
+	if !strings.Contains(out1, "...") {
+		t.Errorf("Expected truncated string with '...', got: %s", out1)
+	}
+	if !utf8.ValidString(out1) {
+		t.Errorf("Truncated string is not valid UTF-8: %s", out1)
+	}
+
+	// Test limit 2
+	toolSchemaTruncationLimit = 2
+	out2 := buildToolList(tools)
+	if !strings.Contains(out2, "...") {
+		t.Errorf("Expected truncated string with '...', got: %s", out2)
+	}
+	if !utf8.ValidString(out2) {
+		t.Errorf("Truncated string is not valid UTF-8: %s", out2)
+	}
+
+	contextLossMetricsMu.Lock()
+	count, exists := contextLossMetrics["tool_schema_json_truncated"]
+	contextLossMetricsMu.Unlock()
+
+	if !exists || count != 2 {
+		t.Errorf("expected metric tool_schema_json_truncated to be 2 and exist, got %d (exists: %v)", count, exists)
+	}
+}
+
+func TestBuildToolList_SchemaTruncation_ExactBoundaries(t *testing.T) {
+	schema := map[string]interface{}{"a": 1}
+	tests := []struct {
+		name        string
+		limit       int
+		expectTrunc bool
+	}{
+		{
+			name:        "length equals limit",
+			limit:       7,
+			expectTrunc: false,
+		},
+		{
+			name:        "length equals limit minus one",
+			limit:       8,
+			expectTrunc: false,
+		},
+		{
+			name:        "length equals limit plus one",
+			limit:       6,
+			expectTrunc: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			contextLossMetricsMu.Lock()
+			contextLossMetrics = make(map[string]int)
+			contextLossMetricsMu.Unlock()
+
+			originalLimit := toolSchemaTruncationLimit
+			toolSchemaTruncationLimit = tt.limit
+			defer func() { toolSchemaTruncationLimit = originalLimit }()
+
+			tools := []Tool{
+				{
+					Type: "function",
+					Function: ToolFunction{
+						Name:       "test_tool",
+						Parameters: schema,
+					},
+				},
+			}
+
+			out := buildToolList(tools)
+			isTruncated := strings.Contains(out, "...")
+			if isTruncated != tt.expectTrunc {
+				t.Errorf("expected truncation: %v, got %v", tt.expectTrunc, isTruncated)
+			}
+
+			contextLossMetricsMu.Lock()
+			count, exists := contextLossMetrics["tool_schema_json_truncated"]
+			contextLossMetricsMu.Unlock()
+
+			if tt.expectTrunc {
+				if !exists || count != 1 {
+					t.Errorf("expected metric tool_schema_json_truncated to be 1 and exist, got %d (exists: %v)", count, exists)
+				}
+			} else {
+				if exists && count != 0 {
+					t.Errorf("expected metric tool_schema_json_truncated to not exist or be 0, got %d", count)
+				}
+			}
+		})
+	}
+}
