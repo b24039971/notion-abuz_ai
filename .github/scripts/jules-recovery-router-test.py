@@ -15,6 +15,7 @@ from unittest.mock import patch
 SCRIPT_PATH = Path(__file__).with_name("jules-recovery-router.py")
 WORKFLOW_PATH = Path(__file__).parents[1] / "workflows" / "jules_recovery_router.yml"
 BURST_WORKFLOW_PATH = Path(__file__).parents[1] / "workflows" / "jules_burst_monitor.yml"
+UNATTENDED_WORKFLOW_PATH = Path(__file__).parents[1] / "workflows" / "jules_unattended_monitor.yml"
 SPEC = importlib.util.spec_from_file_location("jules_recovery_router", SCRIPT_PATH)
 router = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
@@ -215,6 +216,16 @@ class RecoveryRouterTest(unittest.TestCase):
         self.assertIn("timeout-minutes: 10", text)
         self.assertIn("vars.JULES_BURST_MONITOR_CYCLES || '6'", text)
         self.assertIn("vars.JULES_BURST_MONITOR_INTERVAL_SECONDS || '30'", text)
+        self.assertIn("STALE_IN_PROGRESS_MINUTES", text)
+        self.assertIn("stale_in_progress_count", text)
+        self.assertIn("Stale in-progress sessions", text)
+
+    def test_unattended_monitor_summarizes_stale_in_progress_sessions(self) -> None:
+        text = UNATTENDED_WORKFLOW_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("STALE_IN_PROGRESS_MINUTES", text)
+        self.assertIn("stale_in_progress_count", text)
+        self.assertIn("stale_in_progress_sessions", text)
 
     def test_github_get_retries_transient_503(self) -> None:
         client = router.GitHubClient(api_url="https://api.github.test", repo=REPO, token="token")

@@ -68,18 +68,27 @@ if not out:
 
 now = int(os.environ["FAKE_NOW_EPOCH"])
 scenario = os.environ.get("FAKE_SCENARIO", "repeat_feedback")
-session_name = "sessions/test-routine" if scenario == "routine_question" else "sessions/test-repeat-feedback"
+if scenario == "routine_question":
+    session_name = "sessions/test-routine"
+elif scenario == "in_progress_stale":
+    session_name = "sessions/test-in-progress-stale"
+elif scenario == "in_progress_repeat":
+    session_name = "sessions/test-in-progress-repeat"
+else:
+    session_name = "sessions/test-repeat-feedback"
 task_id = "proxy-runtime-final-answer-mode-stability"
 
 if method == "GET" and url.endswith("/sessions?pageSize=100"):
+    state = "IN_PROGRESS" if scenario.startswith("in_progress_") else "AWAITING_USER_FEEDBACK"
+    update_time = iso(now - 4000) if scenario.startswith("in_progress_") else iso(now - 60)
     payload = {
         "sessions": [
             {
                 "name": session_name,
-                "state": "AWAITING_USER_FEEDBACK",
+                "state": state,
                 "sourceContext": {"source": "sources/github/Omnividente/notion-abuz_ai"},
                 "createTime": iso(now - 900),
-                "updateTime": iso(now - 60),
+                "updateTime": update_time,
             }
         ]
     }
@@ -97,6 +106,43 @@ elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "
                     )
                 },
             }
+        ]
+    }
+elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "in_progress_stale":
+    payload = {
+        "activities": [
+            {
+                "originator": "AGENT",
+                "createTime": iso(now - 3900),
+                "message": {
+                    "text": (
+                        f"selected task id: {task_id}\n"
+                        "API error left me with partial context from the previous search."
+                    )
+                },
+            }
+        ]
+    }
+elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "in_progress_repeat":
+    payload = {
+        "activities": [
+            {
+                "originator": "AGENT",
+                "createTime": iso(now - 5000),
+                "message": {
+                    "text": f"selected task id: {task_id}\nStill working."
+                },
+            },
+            {
+                "originator": "USER",
+                "createTime": iso(now - 4900),
+                "message": {"text": "AUTONOMOUS_CONTINUE_TOKEN\nRecover stalled work."},
+            },
+            {
+                "originator": "USER",
+                "createTime": iso(now - 4500),
+                "message": {"text": "AUTONOMOUS_CONTINUE_TOKEN\nRecover stalled work again."},
+            },
         ]
     }
 elif method == "GET" and f"/{session_name}/activities?" in url:
@@ -174,6 +220,8 @@ class JulesUnattendedMonitorTest(unittest.TestCase):
                 "MIN_USER_REPLY_INTERVAL_MINUTES": "0",
                 "STALE_AWAITING_FEEDBACK_MINUTES": "10",
                 "MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS": "2",
+                "STALE_IN_PROGRESS_MINUTES": "45",
+                "MAX_STALE_IN_PROGRESS_ESCALATIONS": "2",
             }
         )
         for name in ("JULES_API_KEY_BACKUP", "GITHUB_API_TOKEN", "GITHUB_API_URL"):
@@ -251,6 +299,64 @@ class JulesUnattendedMonitorTest(unittest.TestCase):
             self.assertEqual(outputs["failed_recovery_action"], "block")
             self.assertEqual(outputs["failed_task_id"], TASK_ID)
             self.assertEqual(outputs["failed_session_id"], "test-repeat-feedback")
+
+    def test_stale_in_progress_session_gets_dynamic_recovery_prompt(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            result, output_path, send_body = self.run_monitor(tmp_path, scenario="in_progress_stale")
+
+            self.assertEqual(
+                result.returncode,
+                0,
+                msg=f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}",
+            )
+            self.assertIn("Sent dynamic stale in-progress recovery message", result.stdout)
+            body = json.loads(send_body.read_text(encoding="utf-8"))
+            prompt = body["prompt"]
+            self.assertIn(f"task_id: {TASK_ID}", prompt)
+            self.assertIn("wait_reason: transient_api_or_partial_context", prompt)
+            self.assertIn("prompt_action: repeat_targeted_context_collection", prompt)
+            self.assertIn("Jules session stayed IN_PROGRESS without recent activity", prompt)
+            self.assertIn("Не продолжай по частичным данным", prompt)
+
+            outputs = dict(
+                line.split("=", 1)
+                for line in output_path.read_text(encoding="utf-8").splitlines()
+                if "=" in line
+            )
+            self.assertEqual(outputs["active_sessions"], "1")
+            self.assertEqual(outputs["touched_sessions"], "1")
+            self.assertEqual(outputs["stale_in_progress_count"], "1")
+            self.assertIn("transient_api_or_partial_context", outputs["wait_reason"])
+            self.assertIn("repeat_targeted_context_collection", outputs["prompt_action"])
+
+    def test_repeated_stale_in_progress_limit_deletes_and_blocks_task(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            result, output_path, _send_body = self.run_monitor(tmp_path, scenario="in_progress_repeat")
+            curl_log = tmp_path / "curl.log"
+
+            self.assertEqual(
+                result.returncode,
+                0,
+                msg=f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}",
+            )
+            self.assertIn(
+                "Autonomous in-progress recovery limit reached for sessions/test-in-progress-repeat",
+                result.stdout,
+            )
+            self.assertEqual(curl_log.read_text(encoding="utf-8"), "DELETE sessions/test-in-progress-repeat\n")
+
+            outputs = dict(
+                line.split("=", 1)
+                for line in output_path.read_text(encoding="utf-8").splitlines()
+                if "=" in line
+            )
+            self.assertEqual(outputs["active_sessions"], "0")
+            self.assertEqual(outputs["touched_sessions"], "1")
+            self.assertEqual(outputs["failed_recovery_action"], "block")
+            self.assertEqual(outputs["failed_task_id"], TASK_ID)
+            self.assertEqual(outputs["failed_session_id"], "test-in-progress-repeat")
 
 
 if __name__ == "__main__":

@@ -328,7 +328,7 @@ def task_lines(task: dict[str, Any] | None) -> list[str]:
 
 
 def action_instruction(prompt_action: str, *, mode: str) -> str:
-    if mode == "stale":
+    if mode == "stale" and prompt_action in {"continue_safely", "choose_safe_next_step"}:
         return (
             "Предыдущий autonomous continue уже был отправлен, но сессия всё ещё ждёт пользователя. "
             "Не повторяй вопрос. Выбери безопасный исход: завершить задачу в текущем scope либо оформить blocked."

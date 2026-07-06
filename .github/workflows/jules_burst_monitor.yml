@@ -48,6 +48,8 @@ jobs:
           MIN_USER_REPLY_INTERVAL_MINUTES: "0"
           STALE_AWAITING_FEEDBACK_MINUTES: "10"
           MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS: "2"
+          STALE_IN_PROGRESS_MINUTES: "45"
+          MAX_STALE_IN_PROGRESS_ESCALATIONS: "2"
           CYCLES: ${{ inputs.cycles || vars.JULES_BURST_MONITOR_CYCLES || '6' }}
           INTERVAL_SECONDS: ${{ inputs.interval_seconds || vars.JULES_BURST_MONITOR_INTERVAL_SECONDS || '30' }}
         run: |
@@ -144,6 +146,8 @@ jobs:
             failed_recovery_reason="$(get_output failed_recovery_reason "$output_file")"
             stale_waiting_count="$(get_output stale_waiting_count "$output_file")"
             stale_waiting_sessions="$(get_output stale_waiting_sessions "$output_file")"
+            stale_in_progress_count="$(get_output stale_in_progress_count "$output_file")"
+            stale_in_progress_sessions="$(get_output stale_in_progress_sessions "$output_file")"
             wait_reason="$(get_output wait_reason "$output_file")"
             prompt_action="$(get_output prompt_action "$output_file")"
             prompt_task_id="$(get_output prompt_task_id "$output_file")"
@@ -156,6 +160,7 @@ jobs:
             echo "Open autonomous PRs: ${open_prs}"
             echo "Failed recovery action: ${failed_recovery_action:-none}"
             echo "Stale waiting sessions: ${stale_waiting_count:-0} ${stale_waiting_sessions:-}"
+            echo "Stale in-progress sessions: ${stale_in_progress_count:-0} ${stale_in_progress_sessions:-}"
             echo "Dynamic wait reasons: ${wait_reason:-}"
             echo "Dynamic prompt actions: ${prompt_action:-}"
             echo "Dynamic prompt task ids: ${prompt_task_id:-}"
