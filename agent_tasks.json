@@ -5532,7 +5532,7 @@
     },
     {
       "id": "proxy-tools-schema-negative-limit-test-fix",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add negative boundary test for tool schema limit",

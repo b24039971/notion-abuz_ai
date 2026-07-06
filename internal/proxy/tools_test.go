@@ -2907,13 +2907,6 @@ func TestToolSchemaJSONTruncatedNegativeLimit(t *testing.T) {
 	contextLossMetrics = make(map[string]int)
 	contextLossMetricsMu.Unlock()
 
-	// Override limit for test and restore after
-	originalLimit := toolSchemaTruncationLimit
-	toolSchemaTruncationLimit = -10
-	defer func() {
-		toolSchemaTruncationLimit = originalLimit
-	}()
-
 	schema := map[string]interface{}{
 		"type": "object",
 		"properties": map[string]interface{}{
@@ -2931,21 +2924,38 @@ func TestToolSchemaJSONTruncatedNegativeLimit(t *testing.T) {
 		},
 	}
 
-	out := buildToolList(tools)
+	// Override limit for test to zero to get baseline output
+	originalLimit := toolSchemaTruncationLimit
+	toolSchemaTruncationLimit = 0
+	defer func() {
+		toolSchemaTruncationLimit = originalLimit
+	}()
 
-	if !strings.Contains(out, "...") {
-		t.Errorf("Expected truncated string with '...', got: %s", out)
+	zeroLimitOut := buildToolList(tools)
+
+	// Override limit to negative
+	toolSchemaTruncationLimit = -10
+
+	negativeLimitOut := buildToolList(tools)
+
+	if negativeLimitOut != zeroLimitOut {
+		t.Errorf("Expected output with negative limit to identically match output with zero limit. \nZero limit output: %s\nNegative limit output: %s", zeroLimitOut, negativeLimitOut)
 	}
 
-	if !utf8.ValidString(out) {
-		t.Errorf("Truncated string is not valid UTF-8: %s", out)
+	if !strings.Contains(negativeLimitOut, "...") {
+		t.Errorf("Expected truncated string with '...', got: %s", negativeLimitOut)
+	}
+
+	if !utf8.ValidString(negativeLimitOut) {
+		t.Errorf("Truncated string is not valid UTF-8: %s", negativeLimitOut)
 	}
 
 	contextLossMetricsMu.Lock()
 	count, exists := contextLossMetrics["tool_schema_json_truncated"]
 	contextLossMetricsMu.Unlock()
 
-	if !exists || count != 1 {
-		t.Errorf("Expected context loss metric tool_schema_json_truncated to be 1, got %d (exists=%v)", count, exists)
+	// 2 because it's called twice: once with 0, once with -10
+	if !exists || count != 2 {
+		t.Errorf("Expected context loss metric tool_schema_json_truncated to be 2, got %d (exists=%v)", count, exists)
 	}
 }
