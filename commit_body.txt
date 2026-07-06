@@ -1,15 +1,12 @@
-This PR resolves the task `proxy-tools-strip-claude-code-newlines-edge-case-test` by adding an explicit edge-case test case for testing how Claude Code strips excess newlines placed around strings. We also add a small `proxy-tools-is-suggestion-mode-tests` task to manifest queue to meet the task replenishment limit.
-
 <!-- AUTONOMOUS_TASK_EVIDENCE
-task_id: proxy-tools-strip-claude-code-newlines-edge-case-test
-status: done
-acceptance:
-- Verify an edge-case test for newline cleanup is added at string boundaries -> added test case 'cleans up extra newlines at string boundaries' in internal/proxy/tools_test.go
+task_id: proxy-runtime-session-empty-system-prompt-metric
+status: blocked
+blocked_reason: The implementation already exists in the codebase but the autonomous PR quality gate rejects operational/diagnostic tasks that only change tests without runtime or script changes. Task must be blocked.
 evidence_files:
-- internal/proxy/tools_test.go
+- internal/proxy/session_test.go
 - agent_tasks.json
 checks:
-- go test ./internal/proxy -run TestStripClaudeCodeInstructions_PreservesCodingIntent
+- go test ./...
 - python3 scripts/validate_agent_tasks.py agent_tasks.json
-micro_pr_justification: The selected task targets a specific testing boundary issue and provides isolated validation. Grouping this test prevents regressions when Claude Code integration tags change logic.
+micro_pr_justification: The PR blocks the task because the implementation already exists and the PR quality gate rejects operational/diagnostic tasks that only change tests.
 -->

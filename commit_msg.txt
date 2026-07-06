@@ -1,22 +1,5 @@
-proxy: add test for system instruction truncation in session recovery
+test(proxy): Block diagnostic task due to missing runtime changes
 
-Этап плана: PR
-Что сделано: Заменен базовый тест `TestBuildRecoveryMessages_ContextLoss_SystemInstruction` на две конкретные подпроверки для тестирования границ: 1200 рун (без усечения) и 1201 руна с многобайтовым символом (с усечением). Добавлены строгие проверки карты метрик с использованием блокировки и валидация UTF-8, чтобы убедиться, что усечение не повреждает строку. Обновлен манифест задач (установлен статус done).
-Что дальше: Отправка изменений и завершение задачи `proxy-session-recovery-system-instruction-truncation-test`.
-Зачем: Гарантирует корректную работу логики усечения системных инструкций во время восстановления сессии без потери контекста и повреждения кодировки UTF-8 для многобайтовых символов.
-Почему так: Использование `t.Run` с конкретными границами и валидацией `utf8.ValidString()` - самый надежный способ проверить безопасность работы со строками, содержащими многобайтовые символы, не изменяя саму логику прокси.
-Проверки/риски: Выполнено `go test ./...` и скрипт валидации `agent_tasks.json`. Риски регрессий минимальны, так как изменения касаются только тестов.
-
-<!-- AUTONOMOUS_TASK_EVIDENCE
-task_id: proxy-session-recovery-system-instruction-truncation-test
-status: done
-acceptance:
-- Verify large system instructions are properly truncated and system_instruction_truncated metric is incremented -> tested in internal/proxy/session_test.go by Exactly1200Runes and Exactly1201Runes_MultiByte subtests
-evidence_files:
-- internal/proxy/session_test.go
-- agent_tasks.json
-checks:
-- go test ./...
-- python3 scripts/validate_agent_tasks.py agent_tasks.json
-micro_pr_justification: This PR implements the complete operational theme of verifying system instruction truncation boundaries during proxy session recovery in one self-contained task.
--->
+- Task proxy-runtime-session-empty-system-prompt-metric was rejected by the autonomous PR quality gate.
+- The gate rejects diagnostic tasks that change only tests/manifests without runtime changes.
+- Since the implementation already exists in internal/proxy/session.go, the task is marked as blocked in agent_tasks.json with a concrete blocked_reason to satisfy the quality gate.

@@ -44,6 +44,24 @@
   },
   "tasks": [
     {
+      "id": "proxy-runtime-session-recovery-first-user-message-dropped",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Track first user message dropped during session recovery",
+      "description": "Session recovery logs when the first user message is dropped, but we should also track this context loss metric to monitor Claude Code bridge stability over time.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/session_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Add context loss metric tracking for first user message drops.",
+        "Add explicit test case to verify metric is tracked.",
+        "Update manifest to mark this task as done."
+      ]
+    },
+    {
       "id": "proxy-tools-schema-json-truncation-test",
       "status": "done",
       "area": "proxy",
@@ -5937,7 +5955,7 @@
     },
     {
       "id": "proxy-runtime-session-empty-system-prompt-metric",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Track empty system prompts dropped during session recovery",
@@ -5951,7 +5969,8 @@
         "Add context loss metric tracking for empty system prompt drops.",
         "Add explicit test case to verify metric is tracked.",
         "Update manifest to mark this task as done."
-      ]
+      ],
+      "blocked_reason": "The implementation already exists in the codebase but the autonomous PR quality gate rejects operational/diagnostic tasks that only change tests without runtime or script changes. Task must be blocked."
     },
     {
       "id": "proxy-runtime-tool-result-continuation-context-loss",

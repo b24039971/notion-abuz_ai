@@ -245,6 +245,42 @@ func TestBuildRecoveryMessages_ContextLoss_TrailingDropped(t *testing.T) {
 	}
 }
 
+func TestBuildRecoveryMessages_ContextLoss_MultipleEmptySystemMessages(t *testing.T) {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	messages := []ChatMessage{
+		{Role: "system", Content: "   \n "}, // Empty after trim
+		{Role: "system", Content: ""},       // Empty
+		{Role: "user", Content: "First query to trigger needsFreshThreadRecovery"},
+		{Role: "assistant", Content: "ack"},
+		{Role: "user", Content: "Latest query"},
+	}
+
+	buildFreshThreadRecoveryMessages(messages)
+
+	logOutput := buf.String()
+	if !strings.Contains(logOutput, "[metrics] context_loss: empty_system_prompt_dropped") {
+		t.Errorf("Expected context loss metric for empty_system_prompt_dropped, got: %s", logOutput)
+	}
+	if !strings.Contains(logOutput, "[bridge] diagnostic: session recovery dropped empty system instruction") {
+		t.Errorf("Expected diagnostic log for empty system prompt dropped, got: %s", logOutput)
+	}
+
+	contextLossMetricsMu.Lock()
+	count, exists := contextLossMetrics["empty_system_prompt_dropped"]
+	contextLossMetricsMu.Unlock()
+
+	if !exists || count < 2 {
+		t.Errorf("Expected empty_system_prompt_dropped metric to be explicitly recorded with count >= 2, but exists=%v, count=%d", exists, count)
+	}
+}
+
 func TestBuildRecoveryMessages_ContextLoss_EmptySystemMessage(t *testing.T) {
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
