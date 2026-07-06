@@ -5516,23 +5516,8 @@
       ]
     },
     {
-      "id": "proxy-tools-schema-negative-limit-test",
-      "status": "done",
-      "area": "proxy",
-      "risk": "low",
-      "title": "Add negative boundary test for tool schema limit",
-      "description": "Add a test validating that negative tool schema truncation limits map to 0 without panicking",
-      "allowed_paths": [
-        "internal/proxy/tools.go",
-        "internal/proxy/tools_test.go"
-      ],
-      "acceptance": [
-        "Verify negative limit produces valid truncated string"
-      ]
-    },
-    {
       "id": "proxy-tools-schema-zero-limit-test",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add zero boundary test for tool schema limit",
@@ -5543,6 +5528,36 @@
       ],
       "acceptance": [
         "Verify zero limit produces valid truncated string"
+      ]
+    },
+    {
+      "id": "proxy-tools-schema-negative-limit-test-fix",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add negative boundary test for tool schema limit",
+      "description": "Add a test validating that a negative tool schema truncation limit truncates string correctly by falling back to 0 limit.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go"
+      ],
+      "acceptance": [
+        "Verify negative limit behaves identically to zero limit"
+      ]
+    },
+    {
+      "id": "proxy-tools-schema-negative-limit-test-fallback",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add negative boundary test for tool schema limit fallback",
+      "description": "Add a test validating that a negative tool schema truncation limit truncates string correctly by falling back to 0 limit.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go"
+      ],
+      "acceptance": [
+        "Verify negative limit behaves identically to zero limit"
       ]
     }
   ]

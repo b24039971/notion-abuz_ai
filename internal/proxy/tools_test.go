@@ -2223,6 +2223,55 @@ func TestBuildSessionChainContinuation_RetryLoopMetric(t *testing.T) {
 	}
 }
 
+func TestBuildToolList_SchemaTruncation_ZeroLimit(t *testing.T) {
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	originalLimit := toolSchemaTruncationLimit
+	toolSchemaTruncationLimit = 0
+	defer func() { toolSchemaTruncationLimit = originalLimit }()
+
+	tools := []Tool{
+		{
+			Function: ToolFunction{
+				Name:        "TestFunc",
+				Description: "A test function",
+				Parameters: map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						"🚀🔥😃👨‍👩‍👧‍👦": map[string]interface{}{
+							"type": "string",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	result := buildToolList(tools)
+
+	if !strings.Contains(result, "Function: TestFunc - A test function") {
+		t.Errorf("expected function definition, got %s", result)
+	}
+
+	if !strings.Contains(result, "Parameters: ...\n") {
+		t.Errorf("expected schema to be truncated completely to just '...', got %s", result)
+	}
+
+	if !utf8.ValidString(result) {
+		t.Errorf("Truncated string is not valid UTF-8")
+	}
+
+	contextLossMetricsMu.Lock()
+	count, exists := contextLossMetrics["tool_schema_json_truncated"]
+	contextLossMetricsMu.Unlock()
+
+	if !exists || count != 1 {
+		t.Errorf("expected metric tool_schema_json_truncated to be 1 and exist, got %d (exists: %v)", count, exists)
+	}
+}
+
 func TestBuildToolList_SchemaTruncation(t *testing.T) {
 	contextLossMetricsMu.Lock()
 	contextLossMetrics = make(map[string]int)
