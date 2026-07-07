@@ -6891,7 +6891,7 @@
     },
     {
       "id": "automation-recovery-followup-d2b49a08",
-      "status": "todo",
+      "status": "blocked",
       "area": "automation",
       "risk": "low",
       "title": "Investigate root cause of Jules failure for automation-health-closed-pr-label-metrics",
@@ -6904,7 +6904,25 @@
         "The root cause is identified using CI logs, local live smoke, or captured Claude Code transcripts.",
         "A fix is proposed or the task is closed if obsolete."
       ],
-      "source_reference": "Blocked task automation-health-closed-pr-label-metrics"
+      "source_reference": "Blocked task automation-health-closed-pr-label-metrics",
+      "blocked_reason": "Missing concrete CI logs, live smoke artifacts, or captured Claude Code transcripts for Jules sessions 12235806351016482336 and 10894904503422075571 in the repository. Unable to offline reproduce or identify root cause without external artifacts."
+    },
+    {
+      "id": "add-transient-guard-to-proxy-fallback",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add transient failure guard to session continuation fallback prompt",
+      "description": "If a multi-turn tool output ends with a transient API failure (like 502 Bad Gateway), Claude Code may prematurely finalize its response. Add a guard instruction to the continuation prompt so it knows the failure is transient.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/session_test.go"
+      ],
+      "acceptance": [
+        "The string transientGuardLine is defined and used.",
+        "If the trailing output indicates a 502 or timeout, transientGuardLine is appended.",
+        "A test confirms transientGuardLine is added for known transient errors."
+      ]
     }
   ]
 }
