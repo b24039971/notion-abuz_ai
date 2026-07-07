@@ -5884,7 +5884,7 @@
     },
     {
       "id": "automation-health-repeated-followup-generation-689e050d",
-      "status": "todo",
+      "status": "blocked",
       "area": "automation",
       "risk": "low",
       "title": "Fix automation health finding: repeated_followup_generation",
@@ -5902,7 +5902,8 @@
       "health_finding_hash": "689e050d4c9e",
       "health_finding_code": "repeated_followup_generation",
       "health_finding_severity": "degraded",
-      "health_report_generated_at": "2026-07-06T13:46:24Z"
+      "health_report_generated_at": "2026-07-06T13:46:24Z",
+      "blocked_reason": "To fix this properly, we need to modify .github/scripts/automation-health-report.py to update its followup tracking regex in addition to review-autonomous-pr-quality.py, but automation-health-report.py is not in allowed_paths."
     },
     {
       "id": "proxy-runtime-notion-persona-leakage-prevention",
