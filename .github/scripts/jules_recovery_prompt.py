@@ -567,6 +567,16 @@ def command_build(args: argparse.Namespace) -> int:
         if manifest_path.exists():
             manifest = load_manifest(manifest_path)
 
+    pr_context = None
+    if args.pr_context_file:
+        pr_context_path = Path(args.pr_context_file)
+        if pr_context_path.exists():
+            with pr_context_path.open("r", encoding="utf-8") as pr_context_file:
+                loaded_pr_context = json.load(pr_context_file)
+            if not isinstance(loaded_pr_context, dict):
+                raise ValueError("pr context root must be an object")
+            pr_context = loaded_pr_context
+
     payload = build_from_activities(
         activities=activities,
         manifest=manifest,
@@ -577,6 +587,7 @@ def command_build(args: argparse.Namespace) -> int:
         mode=args.mode,
         stale_reason=args.stale_reason,
         max_continue_attempts=args.max_continue_attempts,
+        pr_context=pr_context,
     )
     print(json.dumps(payload, ensure_ascii=False, indent=2 if args.pretty else None))
     return 0
@@ -593,6 +604,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--mode", choices=("continue", "stale"), default="continue")
     parser.add_argument("--stale-reason", default="")
     parser.add_argument("--max-continue-attempts", type=int, default=2)
+    parser.add_argument("--pr-context-file", default="")
     parser.add_argument("--pretty", action="store_true")
     return parser
 

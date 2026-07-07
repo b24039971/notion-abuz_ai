@@ -47,6 +47,7 @@ jobs:
           python3 .github/scripts/count-autonomous-prs-test.py
           python3 .github/scripts/filter-active-jules-sessions-test.py
           python3 .github/scripts/jules_recovery_prompt_test.py
+          python3 .github/scripts/collect_failed_pr_context_test.py
           python3 .github/scripts/jules-unattended-monitor-test.py
           python3 .github/scripts/summarize-jules-activities-test.py
           python3 .github/scripts/summarize-jules-failures-test.py

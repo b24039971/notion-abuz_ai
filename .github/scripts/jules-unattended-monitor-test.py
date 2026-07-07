@@ -315,6 +315,8 @@ class JulesUnattendedMonitorTest(unittest.TestCase):
         output_path = tmp_path / "github-output.txt"
         curl_log = tmp_path / "curl.log"
         send_body = tmp_path / "send-body.json"
+        empty_pr_context = tmp_path / "empty-pr-context.json"
+        empty_pr_context.write_text("{}", encoding="utf-8")
         env = os.environ.copy()
         env.update(
             {
@@ -324,6 +326,7 @@ class JulesUnattendedMonitorTest(unittest.TestCase):
                 "FAKE_SCENARIO": scenario,
                 "FAKE_CURL_LOG": str(curl_log),
                 "FAKE_SEND_BODY": str(send_body),
+                "JULES_FAILED_PR_CONTEXT_FIXTURE": str(empty_pr_context),
                 "GITHUB_OUTPUT": str(output_path),
                 "GITHUB_REPOSITORY": "Omnividente/notion-abuz_ai",
                 "JULES_API_KEY": "fake-key",
@@ -389,6 +392,62 @@ class JulesUnattendedMonitorTest(unittest.TestCase):
             self.assertIn("choose_safe_next_step", outputs["prompt_action"])
             self.assertIn(TASK_ID, outputs["prompt_task_id"])
             self.assertIn("0/2", outputs["continue_attempts"])
+
+    def test_dynamic_prompt_includes_failed_pr_context_when_available(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            fixture = tmp_path / "failed-pr-context.json"
+            fixture.write_text(
+                json.dumps(
+                    {
+                        "repo": "Omnividente/notion-abuz_ai",
+                        "pr_number": "#401",
+                        "head_sha": "abc123",
+                        "changed_files": [".github/scripts/jules-unattended-monitor.sh"],
+                        "failed_checks": [
+                            {
+                                "name": "CI / validate",
+                                "conclusion": "failure",
+                                "details_url": (
+                                    "https://github.com/Omnividente/notion-abuz_ai/actions/runs/123/job/9"
+                                    "?token=ghp_abcdef1234567890"
+                                ),
+                                "annotations": [
+                                    "monitor.sh: failed with token=ghp_abcdef1234567890"
+                                ],
+                                "log_excerpt": "##[error]Process completed with exit code 1.",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            result, _output_path, send_body = self.run_monitor(
+                tmp_path,
+                scenario="routine_question",
+                extra_env={
+                    "GITHUB_API_TOKEN": "fake-gh-token",
+                    "GITHUB_API_URL": "https://api.github.test",
+                    "JULES_FAILED_PR_CONTEXT_FIXTURE": str(fixture),
+                },
+            )
+
+            self.assertEqual(
+                result.returncode,
+                0,
+                msg=f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}",
+            )
+            body = json.loads(send_body.read_text(encoding="utf-8"))
+            prompt = body["prompt"]
+            self.assertIn("pr_context: available", prompt)
+            self.assertIn("pr_number: #401", prompt)
+            self.assertIn("changed_files:", prompt)
+            self.assertIn("CI / validate: failure", prompt)
+            self.assertIn("annotation:", prompt)
+            self.assertIn("log_excerpt:", prompt)
+            self.assertIn("используй annotations/log_excerpt/changed_files", prompt)
+            self.assertIn("[REDACTED]", prompt)
+            self.assertNotIn("ghp_abcdef1234567890", prompt)
 
     def test_repeated_autonomous_continue_limit_deletes_without_waiting_for_stale_age(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

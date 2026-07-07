@@ -4,7 +4,10 @@
 from __future__ import annotations
 
 import importlib.util
+import json
+import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -198,6 +201,65 @@ class JulesRecoveryPromptTest(unittest.TestCase):
         self.assertIn("используй annotations/log_excerpt/changed_files", prompt)
         self.assertIn("[REDACTED]", prompt)
         self.assertNotIn("ghp_abcdef1234567890", prompt)
+
+    def test_cli_accepts_pr_context_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            activities = tmp_path / "activities.json"
+            pr_context = tmp_path / "pr-context.json"
+            activities.write_text(
+                json.dumps(
+                    {
+                        "activities": [
+                            agent("selected task id: task-one\nI am waiting for input.")
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            pr_context.write_text(
+                json.dumps(
+                    {
+                        "repo": "Omnividente/notion-abuz_ai",
+                        "pr_number": "#401",
+                        "failed_checks": [
+                            {
+                                "name": "CI / validate",
+                                "conclusion": "failure",
+                                "log_excerpt": "##[error]Process completed with exit code 1.",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            output = subprocess.check_output(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "--activities",
+                    str(activities),
+                    "--manifest",
+                    "",
+                    "--task-id",
+                    "task-one",
+                    "--repo",
+                    "Omnividente/notion-abuz_ai",
+                    "--session-id",
+                    "1234567890123456789",
+                    "--session-state",
+                    "AWAITING_USER_FEEDBACK",
+                    "--pr-context-file",
+                    str(pr_context),
+                ],
+                text=True,
+            )
+
+        payload = json.loads(output)
+        self.assertIn("pr_context: available", payload["prompt"])
+        self.assertIn("CI / validate: failure", payload["prompt"])
+        self.assertIn("log_excerpt:", payload["prompt"])
 
     def test_sanitizes_password_like_values(self) -> None:
         self.assertEqual(

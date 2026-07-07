@@ -308,6 +308,24 @@ skip_stopped_active_session() {
   return 0
 }
 
+collect_failed_pr_context() {
+  local session_id="$1"
+  local task_id="$2"
+  local out="$3"
+
+  printf '{}\n' > "$out"
+  if [ -z "${GITHUB_REPOSITORY:-}" ] || [ -z "${GITHUB_API_URL:-}" ] || [ -z "${GITHUB_API_TOKEN:-}" ]; then
+    return 0
+  fi
+
+  python3 .github/scripts/collect_failed_pr_context.py \
+    --repo "${GITHUB_REPOSITORY}" \
+    --task-id "$task_id" \
+    --session-id "$session_id" \
+    --api-url "${GITHUB_API_URL}" \
+    --output "$out" || printf '{}\n' > "$out"
+}
+
 build_recovery_prompt() {
   local activities_file="$1"
   local session_id="$2"
@@ -317,6 +335,9 @@ build_recovery_prompt() {
   local stale_reason="$6"
   local out="$7"
   local max_attempts="${8:-$max_stale_feedback_escalations}"
+  local pr_context_file="${tmpdir}/pr-context-${session_id}.json"
+
+  collect_failed_pr_context "$session_id" "$task_id" "$pr_context_file"
 
   python3 .github/scripts/jules_recovery_prompt.py \
     --activities "$activities_file" \
@@ -328,6 +349,7 @@ build_recovery_prompt() {
     --mode "$mode" \
     --stale-reason "$stale_reason" \
     --max-continue-attempts "$max_attempts" \
+    --pr-context-file "$pr_context_file" \
     > "$out"
 }
 
