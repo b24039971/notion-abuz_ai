@@ -109,7 +109,7 @@ jobs:
             "${{ steps.quality-refs.outputs.base_ref }}" \
             "${{ steps.quality-refs.outputs.head_ref }}" \
             | tee /tmp/pr-files.txt
-          if grep -E '(^|/)(config\.yaml|token\.txt|pass\.txt|.*\.log|.*\.(orig|rej|diff|patch)|notion-manager(\.exe)?$)$|^(data|accounts)/|^(my_.*\.go|run_test\.go)$|^(plan[a-zA-Z0-9_-]*|scratch[a-zA-Z0-9_-]*|tmp[a-zA-Z0-9_-]*|jules-notes[a-zA-Z0-9_-]*)\.md$' /tmp/pr-files.txt; then
+          if grep -E '(^|/)(config\.yaml|token\.txt|pass\.txt|.*\.log|.*\.(orig|rej|diff|patch)|notion-manager(\.exe)?$)$|^(data|accounts)/|^(my_.*\.go|run_test\.go)$|^((plan|scratch|tmp|jules-notes)[a-zA-Z0-9_-]*|pr[-_]?body[a-zA-Z0-9_-]*|pull[-_]?request[-_]?body[a-zA-Z0-9_-]*)\.(md|txt)$' /tmp/pr-files.txt; then
             echo "::error::PR changes protected runtime, secret, binary, log, data, account, workflow, or temporary scratch files."
             exit 1
           fi

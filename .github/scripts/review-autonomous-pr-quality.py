@@ -121,7 +121,8 @@ EVIDENCE_FILE_RE = re.compile(
     r"[A-Za-z0-9_./@+:-]*)"
 )
 SCRATCH_FILE_RE = re.compile(
-    r"^(?:plan[a-z0-9_-]*|scratch[a-z0-9_-]*|tmp[a-z0-9_-]*|jules-notes[a-z0-9_-]*)\.md$",
+    r"^(?:plan[a-z0-9_-]*|scratch[a-z0-9_-]*|tmp[a-z0-9_-]*|jules-notes[a-z0-9_-]*|"
+    r"pr[-_]?body[a-z0-9_-]*|pull[-_]?request[-_]?body[a-z0-9_-]*)\.(?:md|txt)$",
     re.IGNORECASE,
 )
 

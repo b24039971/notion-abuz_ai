@@ -546,7 +546,7 @@ jobs:
           - Keep PRs small and bounded: one task id per PR.
           - Do not modify secrets, account JSON, token files, generated logs, binaries, local config.yaml, or runtime data.
           - Do not modify .github/workflows/** unless the selected task explicitly allows workflow work.
-          - Do not open a PR containing temporary scratch files such as *.orig, *.rej, *.diff, *.patch, my_script.go, my_test*.go, run_test.go, plan.md, plan*.md, scratch*.md, tmp*.md, or root planning notes.
+          - Do not open a PR containing temporary scratch files such as *.orig, *.rej, *.diff, *.patch, my_script.go, my_test*.go, run_test.go, plan.md, plan*.md, scratch*.md, tmp*.md, pr_body.txt, pr-body.md, pull_request_body.txt, or root planning notes.
           - Do not add network calls in tests.
           - Do not change deployment files unless explicitly allowed.
           - Do not add new dependencies unless the task requires them and the dependency is justified in the PR body.
