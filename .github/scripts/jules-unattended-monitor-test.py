@@ -81,6 +81,10 @@ elif scenario == "in_progress_long_running_fresh":
     session_name = "sessions/test-in-progress-long-running"
 elif scenario == "in_progress_no_agent_long_running":
     session_name = "sessions/test-in-progress-no-agent"
+elif scenario == "in_progress_no_agent_short_burst":
+    session_name = "sessions/test-in-progress-no-agent-short"
+elif scenario == "in_progress_no_agent_token_stale":
+    session_name = "sessions/test-in-progress-no-agent-token-stale"
 elif scenario == "in_progress_no_agent_repeat":
     session_name = "sessions/test-in-progress-no-agent-repeat"
 elif scenario == "in_progress_repeat":
@@ -91,8 +95,8 @@ task_id = "proxy-runtime-final-answer-mode-stability"
 
 if method == "GET" and url.endswith("/sessions?pageSize=100"):
     state = "IN_PROGRESS" if scenario.startswith("in_progress_") else "AWAITING_USER_FEEDBACK"
-    update_time = iso(now - 5) if scenario in {"in_progress_long_running_fresh", "in_progress_no_agent_long_running"} else iso(now - 4000) if scenario.startswith("in_progress_") else iso(now - 60)
-    create_time = iso(now - 20000) if scenario in {"in_progress_long_running_fresh", "in_progress_no_agent_long_running", "in_progress_no_agent_repeat"} else iso(now - 900)
+    update_time = iso(now - 5) if scenario in {"in_progress_long_running_fresh", "in_progress_no_agent_long_running", "in_progress_no_agent_short_burst", "in_progress_no_agent_token_stale"} else iso(now - 4000) if scenario.startswith("in_progress_") else iso(now - 60)
+    create_time = iso(now - 300) if scenario == "in_progress_no_agent_short_burst" else iso(now - 20000) if scenario in {"in_progress_long_running_fresh", "in_progress_no_agent_long_running", "in_progress_no_agent_token_stale", "in_progress_no_agent_repeat"} else iso(now - 900)
     payload = {
         "sessions": [
             {
@@ -161,8 +165,18 @@ elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "
             }
         ]
     }
-elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "in_progress_no_agent_long_running":
+elif method == "GET" and f"/{session_name}/activities?" in url and scenario in {"in_progress_no_agent_long_running", "in_progress_no_agent_short_burst"}:
     payload = {"activities": []}
+elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "in_progress_no_agent_token_stale":
+    payload = {
+        "activities": [
+            {
+                "originator": "USER",
+                "createTime": iso(now - 360),
+                "message": {"text": "AUTONOMOUS_CONTINUE_TOKEN\nRecover stalled no-agent work."},
+            },
+        ]
+    }
 elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "in_progress_no_agent_repeat":
     payload = {
         "activities": [
@@ -246,7 +260,13 @@ PY
 
 
 class JulesUnattendedMonitorTest(unittest.TestCase):
-    def run_monitor(self, tmp_path: Path, *, scenario: str) -> tuple[subprocess.CompletedProcess[str], Path, Path]:
+    def run_monitor(
+        self,
+        tmp_path: Path,
+        *,
+        scenario: str,
+        extra_env: dict[str, str] | None = None,
+    ) -> tuple[subprocess.CompletedProcess[str], Path, Path]:
         if not shutil.which("bash"):
             self.skipTest("bash is required for jules-unattended-monitor.sh")
         if not shutil.which("jq"):
@@ -282,8 +302,10 @@ class JulesUnattendedMonitorTest(unittest.TestCase):
                 "MAX_STALE_IN_PROGRESS_ESCALATIONS": "2",
             }
         )
+        env.update(extra_env or {})
         for name in ("JULES_API_KEY_BACKUP", "GITHUB_API_TOKEN", "GITHUB_API_URL"):
-            env.pop(name, None)
+            if not extra_env or name not in extra_env:
+                env.pop(name, None)
         if scenario.startswith("in_progress_no_agent_"):
             env["GITHUB_API_TOKEN"] = "fake-gh-token"
             env["GITHUB_API_URL"] = "https://api.github.test"
@@ -461,6 +483,120 @@ class JulesUnattendedMonitorTest(unittest.TestCase):
             self.assertEqual(outputs["stale_in_progress_count"], "1")
             self.assertIn("test-in-progress-no-agent:no-agent-long-running", outputs["stale_in_progress_sessions"])
             self.assertIn(TASK_ID, outputs["prompt_task_id"])
+
+    def test_no_agent_in_progress_under_default_threshold_waits(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            result, output_path, send_body = self.run_monitor(
+                tmp_path,
+                scenario="in_progress_no_agent_short_burst",
+            )
+
+            self.assertEqual(
+                result.returncode,
+                0,
+                msg=f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}",
+            )
+            self.assertIn("no-agent threshold 10800s", result.stdout)
+            self.assertFalse(send_body.exists())
+
+            outputs = dict(
+                line.split("=", 1)
+                for line in output_path.read_text(encoding="utf-8").splitlines()
+                if "=" in line
+            )
+            self.assertEqual(outputs["active_sessions"], "1")
+            self.assertEqual(outputs["touched_sessions"], "0")
+            self.assertEqual(outputs["stale_in_progress_count"], "0")
+
+    def test_burst_no_agent_threshold_sends_recovery_before_three_hours(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            result, output_path, send_body = self.run_monitor(
+                tmp_path,
+                scenario="in_progress_no_agent_short_burst",
+                extra_env={"NO_AGENT_IN_PROGRESS_MINUTES": "4"},
+            )
+
+            self.assertEqual(
+                result.returncode,
+                0,
+                msg=f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}",
+            )
+            self.assertIn("without agent activity after 5 minute(s)", result.stdout)
+            self.assertIn("Sent dynamic no-agent in-progress recovery message", result.stdout)
+            body = json.loads(send_body.read_text(encoding="utf-8"))
+            prompt = body["prompt"]
+            self.assertIn("session_id: test-in-progress-no-agent-short", prompt)
+            self.assertIn(f"task_id: {TASK_ID}", prompt)
+            self.assertIn("without any agent activity or PR", prompt)
+
+            outputs = dict(
+                line.split("=", 1)
+                for line in output_path.read_text(encoding="utf-8").splitlines()
+                if "=" in line
+            )
+            self.assertEqual(outputs["active_sessions"], "1")
+            self.assertEqual(outputs["touched_sessions"], "1")
+            self.assertEqual(outputs["stale_in_progress_count"], "1")
+            self.assertIn("test-in-progress-no-agent-short:no-agent-long-running", outputs["stale_in_progress_sessions"])
+
+    def test_no_agent_recovery_token_under_default_stale_threshold_waits(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            result, output_path, send_body = self.run_monitor(
+                tmp_path,
+                scenario="in_progress_no_agent_token_stale",
+            )
+
+            self.assertEqual(
+                result.returncode,
+                0,
+                msg=f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}",
+            )
+            self.assertIn("no-agent stale threshold 2700s", result.stdout)
+            self.assertFalse(send_body.exists())
+
+            outputs = dict(
+                line.split("=", 1)
+                for line in output_path.read_text(encoding="utf-8").splitlines()
+                if "=" in line
+            )
+            self.assertEqual(outputs["active_sessions"], "1")
+            self.assertEqual(outputs["touched_sessions"], "0")
+            self.assertEqual(outputs["stale_in_progress_count"], "1")
+            self.assertIn("test-in-progress-no-agent-token-stale:no-agent-token", outputs["stale_in_progress_sessions"])
+
+    def test_no_agent_recovery_token_uses_dedicated_stale_threshold(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            result, output_path, send_body = self.run_monitor(
+                tmp_path,
+                scenario="in_progress_no_agent_token_stale",
+                extra_env={"NO_AGENT_STALE_IN_PROGRESS_MINUTES": "5"},
+            )
+
+            self.assertEqual(
+                result.returncode,
+                0,
+                msg=f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}",
+            )
+            self.assertIn("Previous no-agent in-progress recovery", result.stdout)
+            self.assertIn("Sent dynamic no-agent in-progress recovery message", result.stdout)
+            body = json.loads(send_body.read_text(encoding="utf-8"))
+            prompt = body["prompt"]
+            self.assertIn("session_id: test-in-progress-no-agent-token-stale", prompt)
+            self.assertIn("previous no-agent in-progress autonomous recovery token is stale", prompt)
+
+            outputs = dict(
+                line.split("=", 1)
+                for line in output_path.read_text(encoding="utf-8").splitlines()
+                if "=" in line
+            )
+            self.assertEqual(outputs["active_sessions"], "1")
+            self.assertEqual(outputs["touched_sessions"], "1")
+            self.assertEqual(outputs["stale_in_progress_count"], "1")
+            self.assertIn("test-in-progress-no-agent-token-stale:no-agent-stale-token", outputs["stale_in_progress_sessions"])
 
     def test_repeated_no_agent_in_progress_limit_deletes_and_blocks_task(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

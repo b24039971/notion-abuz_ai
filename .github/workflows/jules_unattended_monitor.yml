@@ -53,6 +53,7 @@ jobs:
           STALE_AWAITING_FEEDBACK_MINUTES: "10"
           MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS: "2"
           STALE_IN_PROGRESS_MINUTES: "45"
+          NO_AGENT_STALE_IN_PROGRESS_MINUTES: ${{ vars.JULES_NO_AGENT_STALE_IN_PROGRESS_MINUTES || '5' }}
           MAX_STALE_IN_PROGRESS_ESCALATIONS: "2"
         run: bash .github/scripts/jules-unattended-monitor.sh
 

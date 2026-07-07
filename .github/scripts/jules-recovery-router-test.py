@@ -412,6 +412,10 @@ class RecoveryRouterTest(unittest.TestCase):
         self.assertIn("vars.JULES_BURST_MONITOR_CYCLES || '6'", text)
         self.assertIn("vars.JULES_BURST_MONITOR_INTERVAL_SECONDS || '30'", text)
         self.assertIn("STALE_IN_PROGRESS_MINUTES", text)
+        self.assertIn("NO_AGENT_IN_PROGRESS_MINUTES", text)
+        self.assertIn("vars.JULES_BURST_NO_AGENT_IN_PROGRESS_MINUTES || '4'", text)
+        self.assertIn("NO_AGENT_STALE_IN_PROGRESS_MINUTES", text)
+        self.assertIn("vars.JULES_BURST_NO_AGENT_STALE_IN_PROGRESS_MINUTES || '5'", text)
         self.assertIn("stale_in_progress_count", text)
         self.assertIn("Stale in-progress sessions", text)
 
@@ -419,6 +423,8 @@ class RecoveryRouterTest(unittest.TestCase):
         text = UNATTENDED_WORKFLOW_PATH.read_text(encoding="utf-8")
 
         self.assertIn("STALE_IN_PROGRESS_MINUTES", text)
+        self.assertIn("NO_AGENT_STALE_IN_PROGRESS_MINUTES", text)
+        self.assertIn("vars.JULES_NO_AGENT_STALE_IN_PROGRESS_MINUTES || '5'", text)
         self.assertIn("stale_in_progress_count", text)
         self.assertIn("stale_in_progress_sessions", text)
 

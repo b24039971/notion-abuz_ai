@@ -9,6 +9,8 @@ STALE_AWAITING_FEEDBACK_MINUTES="${STALE_AWAITING_FEEDBACK_MINUTES:-10}"
 MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS="${MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS:-2}"
 STALE_IN_PROGRESS_MINUTES="${STALE_IN_PROGRESS_MINUTES:-45}"
 MAX_IN_PROGRESS_SESSION_MINUTES="${MAX_IN_PROGRESS_SESSION_MINUTES:-180}"
+NO_AGENT_IN_PROGRESS_MINUTES="${NO_AGENT_IN_PROGRESS_MINUTES:-$MAX_IN_PROGRESS_SESSION_MINUTES}"
+NO_AGENT_STALE_IN_PROGRESS_MINUTES="${NO_AGENT_STALE_IN_PROGRESS_MINUTES:-$STALE_IN_PROGRESS_MINUTES}"
 MAX_STALE_IN_PROGRESS_ESCALATIONS="${MAX_STALE_IN_PROGRESS_ESCALATIONS:-2}"
 
 if [ -z "${JULES_API_KEY:-}" ] && [ -z "${JULES_API_KEY_BACKUP:-}" ]; then
@@ -54,6 +56,8 @@ reply_cooldown_seconds="$((MIN_USER_REPLY_INTERVAL_MINUTES * 60))"
 stale_feedback_seconds="$((STALE_AWAITING_FEEDBACK_MINUTES * 60))"
 stale_in_progress_seconds="$((STALE_IN_PROGRESS_MINUTES * 60))"
 max_in_progress_session_seconds="$((MAX_IN_PROGRESS_SESSION_MINUTES * 60))"
+no_agent_in_progress_seconds="$((NO_AGENT_IN_PROGRESS_MINUTES * 60))"
+no_agent_stale_in_progress_seconds="$((NO_AGENT_STALE_IN_PROGRESS_MINUTES * 60))"
 max_stale_feedback_escalations="$MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS"
 max_stale_in_progress_escalations="$MAX_STALE_IN_PROGRESS_ESCALATIONS"
 
@@ -373,10 +377,10 @@ for i in "${!key_labels[@]}"; do
 
           if [ "${latest_token_epoch:-0}" -gt 0 ]; then
             token_age="$((now_epoch - latest_token_epoch))"
-            if [ "$token_age" -lt "$stale_in_progress_seconds" ]; then
-              echo "Skipped ${session_name}; no agent activity yet, but in-progress recovery prompt is still fresh (${token_age}s old, stale threshold ${stale_in_progress_seconds}s, continue tokens ${continue_token_count}/${max_stale_in_progress_escalations})."
+            if [ "$token_age" -lt "$no_agent_stale_in_progress_seconds" ]; then
+              echo "Skipped ${session_name}; no agent activity yet, but in-progress recovery prompt is still fresh (${token_age}s old, no-agent stale threshold ${no_agent_stale_in_progress_seconds}s, continue tokens ${continue_token_count}/${max_stale_in_progress_escalations})."
               record_prompt_detail "${session_name##*/}" "$prompt_json" "$max_stale_in_progress_escalations"
-              stale_in_progress_sessions+=("${session_name##*/}:no-agent-token:${token_age}s/${stale_in_progress_seconds}s:${continue_token_count}/${max_stale_in_progress_escalations}")
+              stale_in_progress_sessions+=("${session_name##*/}:no-agent-token:${token_age}s/${no_agent_stale_in_progress_seconds}s:${continue_token_count}/${max_stale_in_progress_escalations}")
               record_active_task_id "$active_task_id"
               continue
             fi
@@ -395,7 +399,7 @@ for i in "${!key_labels[@]}"; do
               record_active_task_id "$active_task_id"
               continue
             fi
-          elif [ "$max_in_progress_session_seconds" -gt 0 ] && [ "$session_age" -ge "$max_in_progress_session_seconds" ]; then
+          elif [ "$no_agent_in_progress_seconds" -gt 0 ] && [ "$session_age" -ge "$no_agent_in_progress_seconds" ]; then
             echo "Detected long-running IN_PROGRESS Jules session ${session_name} without agent activity after $((session_age / 60)) minute(s); sending dynamic recovery prompt."
             stale_in_progress_sessions+=("${session_name##*/}:no-agent-long-running:${continue_token_count}/${max_stale_in_progress_escalations}")
             if ! build_recovery_prompt \
@@ -412,7 +416,7 @@ for i in "${!key_labels[@]}"; do
               continue
             fi
           else
-            echo "Skipped ${session_name}; no agent activity found for stale in-progress recovery (session age ${session_age}s, long-running threshold ${max_in_progress_session_seconds}s)."
+            echo "Skipped ${session_name}; no agent activity found for stale in-progress recovery (session age ${session_age}s, no-agent threshold ${no_agent_in_progress_seconds}s)."
             record_active_task_id "$active_task_id"
             continue
           fi
