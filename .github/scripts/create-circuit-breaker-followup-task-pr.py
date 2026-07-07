@@ -315,7 +315,7 @@ def open_followup_pr(
         print("No manifest changes to commit.")
         return 0
 
-    run(["git", "commit", "-m", f"Add quality-loop diagnostic task for PR {int(pr_number)}"])
+    run(["git", "commit", "-m", f"Add {kind['loop']} task for PR {int(pr_number)}"])
     remote_url = f"https://x-access-token:{token}@github.com/{repo}.git"
     run(["git", "remote", "set-url", "origin", remote_url])
     run(["git", "push", "-u", "origin", branch, "--force-with-lease"])
@@ -338,7 +338,7 @@ def open_followup_pr(
         token=token,
         api_url=api_url,
         body={
-            "title": f"Add quality-loop diagnostic task for PR #{int(pr_number)}",
+            "title": f"Add {kind['loop']} task for PR #{int(pr_number)}",
             "head": branch,
             "base": default_branch,
             "body": body,
