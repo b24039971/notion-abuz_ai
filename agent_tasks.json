@@ -6377,6 +6377,28 @@
       "health_finding_code": "todo_below_minimum",
       "health_finding_severity": "degraded",
       "health_report_generated_at": "2026-07-07T06:43:34Z"
+    },
+    {
+      "id": "automation-health-repeated-followup-generation-6dc5c3e5",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Fix automation health finding: repeated_followup_generation",
+      "description": "Automation Health reported degraded finding `repeated_followup_generation` in window `current`. Message: Autonomous PRs repeatedly mention follow-up task generation. Evidence: {\"pr_numbers\": [421, 362]}",
+      "allowed_paths": [
+        "scripts/select_agent_task.py",
+        ".github/scripts/review-autonomous-pr-quality.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Root cause for Automation Health finding `repeated_followup_generation` is identified using automation-health artifacts, CI checks, Jules session data, or manifest evidence.",
+        "The implementation fixes the automation issue or blocks this task with a concrete blocked_reason naming missing evidence, permissions, or external API instability.",
+        "A follow-up Automation Health run no longer reports `repeated_followup_generation`, or the PR body explains why the finding is intentionally tolerated."
+      ],
+      "health_finding_hash": "6dc5c3e58cf7",
+      "health_finding_code": "repeated_followup_generation",
+      "health_finding_severity": "degraded",
+      "health_report_generated_at": "2026-07-07T07:58:29Z"
     }
   ]
 }
