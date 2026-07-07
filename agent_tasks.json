@@ -6285,7 +6285,7 @@
       "title": "Diagnose stopped quality loop for autonomous PR #362",
       "area": "automation",
       "risk": "low",
-      "status": "todo",
+      "status": "blocked",
       "description": "Autonomous recovery circuit breaker stopped PR #362 at SHA `8f678dcb9d687fd5cea728943e0739e28377c2b9` for `automation-health-quality-failures-spike-6e14b562`. Diagnose why repeated quality-fix prompts did not converge. Sanitized reason: История последних failed SHA/reasons:\n- `6fc4ecf60efa97f5a0054694ff25668243ac48e3`: PR body repeatedly mentions follow-up tasks. Complete the current task fully without leaving follow-up work, or avoid using the word 'follow-up' if it is a false positive.\n- `eb332ec814fe36dfce3b2032f9fa1091d30f1843`: PR body repeatedly mentions follow-up tasks. Complete the current task fully without leaving follow-up work, or avoid using the word 'follow-up' if it is a false positive.\n- `3ab860ab9b9f9d53d25a4f4",
       "allowed_paths": [
         ".github/scripts/jules-recovery-router.py",
@@ -6305,7 +6305,8 @@
       "source_document": "jules-recovery-router",
       "source_reference": "pull/362@8f678dcb9d687fd5cea728943e0739e28377c2b9",
       "source_task_id": "automation-health-quality-failures-spike-6e14b562",
-      "circuit_breaker_followup_hash": "d971dacd1822"
+      "circuit_breaker_followup_hash": "d971dacd1822",
+      "blocked_reason": "Paused after repeated Jules FAILED sessions: 16626789411582357372. Resume only with human review or concrete live smoke/transcript/CI/offline reproduction evidence."
     },
     {
       "id": "automation-conflict-loop-pr-400-41599460",
