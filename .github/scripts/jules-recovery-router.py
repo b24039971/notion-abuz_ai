@@ -915,6 +915,9 @@ def recovery_prompt_payload_for_session(
 ) -> dict[str, Any]:
     summary = dict(session.get("activity_summary") or {})
     task_id = str(session.get("task_id") or summary.get("task_id") or "")
+    session_name = str(session.get("name") or "")
+    session_id = str(session.get("session_id") or session_name.rsplit("/", 1)[-1])
+    session_state = str(session.get("state") or "")
     task = (state.get("task_details") or {}).get(task_id)
     pr_context = {}
     if repo and task_ids is not None:
@@ -928,6 +931,9 @@ def recovery_prompt_payload_for_session(
         summary=summary,
         task=task,
         task_id=task_id,
+        repo=repo,
+        session_id=session_id,
+        session_state=session_state,
         mode=mode,
         stale_reason=stale_reason,
         max_continue_attempts=MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS,
@@ -991,6 +997,9 @@ def plan_stale_feedback_action(
             "wait_reason": prompt_payload["wait_reason"],
             "prompt_action": prompt_payload["prompt_action"],
             "task_id": prompt_payload["task_id"],
+            "repo": prompt_payload["repo"],
+            "session_id": prompt_payload["session_id"],
+            "session_state": prompt_payload["session_state"],
             "pr_context": prompt_payload["pr_context"],
         },
     )
@@ -1241,6 +1250,9 @@ def plan_recovery_actions(
                             "wait_reason": prompt_payload["wait_reason"],
                             "prompt_action": prompt_payload["prompt_action"],
                             "task_id": prompt_payload["task_id"],
+                            "repo": prompt_payload["repo"],
+                            "session_id": prompt_payload["session_id"],
+                            "session_state": prompt_payload["session_state"],
                             "pr_context": prompt_payload["pr_context"],
                         },
                     )

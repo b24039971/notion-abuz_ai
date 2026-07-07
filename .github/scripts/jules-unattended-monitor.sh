@@ -168,16 +168,21 @@ record_active_task_id() {
 
 build_recovery_prompt() {
   local activities_file="$1"
-  local task_id="$2"
-  local mode="$3"
-  local stale_reason="$4"
-  local out="$5"
-  local max_attempts="${6:-$max_stale_feedback_escalations}"
+  local session_id="$2"
+  local session_state="$3"
+  local task_id="$4"
+  local mode="$5"
+  local stale_reason="$6"
+  local out="$7"
+  local max_attempts="${8:-$max_stale_feedback_escalations}"
 
   python3 .github/scripts/jules_recovery_prompt.py \
     --activities "$activities_file" \
     --manifest agent_tasks.json \
     --task-id "$task_id" \
+    --repo "${GITHUB_REPOSITORY:-}" \
+    --session-id "$session_id" \
+    --session-state "$session_state" \
     --mode "$mode" \
     --stale-reason "$stale_reason" \
     --max-continue-attempts "$max_attempts" \
@@ -303,6 +308,8 @@ for i in "${!key_labels[@]}"; do
         prompt_json="${tmpdir}/prompt-${session_name//\//-}.json"
         if ! build_recovery_prompt \
           "$activities_file" \
+          "${session_name##*/}" \
+          "$session_state" \
           "$active_task_id" \
           "stale" \
           "Jules session stayed IN_PROGRESS without recent activity" \
@@ -368,6 +375,8 @@ for i in "${!key_labels[@]}"; do
           stale_in_progress_sessions+=("${session_name##*/}:stale-token:${continue_token_count}/${max_stale_in_progress_escalations}")
           if ! build_recovery_prompt \
             "$activities_file" \
+            "${session_name##*/}" \
+            "$session_state" \
             "$active_task_id" \
             "stale" \
             "previous in-progress autonomous recovery token is stale" \
@@ -410,7 +419,7 @@ for i in "${!key_labels[@]}"; do
     fi
 
     prompt_json="${tmpdir}/prompt-${session_name//\//-}.json"
-    if ! build_recovery_prompt "$activities_file" "$active_task_id" "continue" "" "$prompt_json"; then
+    if ! build_recovery_prompt "$activities_file" "${session_name##*/}" "$session_state" "$active_task_id" "continue" "" "$prompt_json"; then
       echo "::warning::Could not build recovery prompt for ${session_name}; skipping auto-continue."
       record_active_task_id "$active_task_id"
       continue
@@ -467,7 +476,7 @@ for i in "${!key_labels[@]}"; do
       fi
       echo "Previous autonomous continue for ${session_name} is stale after $((token_age / 60)) minute(s); sending escalation ${continue_token_count}/${max_stale_feedback_escalations}."
       stale_waiting_sessions+=("${session_name##*/}:stale:${continue_token_count}/${max_stale_feedback_escalations}")
-      if ! build_recovery_prompt "$activities_file" "$active_task_id" "stale" "latest autonomous continue token is stale" "$prompt_json"; then
+      if ! build_recovery_prompt "$activities_file" "${session_name##*/}" "$session_state" "$active_task_id" "stale" "latest autonomous continue token is stale" "$prompt_json"; then
         echo "::warning::Could not build stale recovery prompt for ${session_name}; skipping auto-continue."
         record_active_task_id "$active_task_id"
         continue

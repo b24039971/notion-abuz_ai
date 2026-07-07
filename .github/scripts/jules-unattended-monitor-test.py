@@ -251,6 +251,9 @@ class JulesUnattendedMonitorTest(unittest.TestCase):
             self.assertIn("Sent dynamic autonomous continue recovery message", result.stdout)
             body = json.loads(send_body.read_text(encoding="utf-8"))
             prompt = body["prompt"]
+            self.assertIn("repo: Omnividente/notion-abuz_ai", prompt)
+            self.assertIn("session_id: test-routine", prompt)
+            self.assertIn("session_state: AWAITING_USER_FEEDBACK", prompt)
             self.assertIn("task_id: proxy-runtime-final-answer-mode-stability", prompt)
             self.assertIn("wait_reason: routine_question", prompt)
             self.assertIn("prompt_action: choose_safe_next_step", prompt)
@@ -313,6 +316,9 @@ class JulesUnattendedMonitorTest(unittest.TestCase):
             self.assertIn("Sent dynamic stale in-progress recovery message", result.stdout)
             body = json.loads(send_body.read_text(encoding="utf-8"))
             prompt = body["prompt"]
+            self.assertIn("repo: Omnividente/notion-abuz_ai", prompt)
+            self.assertIn("session_id: test-in-progress-stale", prompt)
+            self.assertIn("session_state: IN_PROGRESS", prompt)
             self.assertIn(f"task_id: {TASK_ID}", prompt)
             self.assertIn("wait_reason: transient_api_or_partial_context", prompt)
             self.assertIn("prompt_action: repeat_targeted_context_collection", prompt)

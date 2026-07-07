@@ -1208,6 +1208,9 @@ Blocking reasons:
         self.assertEqual(len(actions), 1)
         self.assertEqual(actions[0].type, "jules_send_message")
         prompt = actions[0].payload["prompt"]
+        self.assertIn(f"repo: {REPO}", prompt)
+        self.assertIn("session_id: 1234567890123456789", prompt)
+        self.assertIn("session_state: AWAITING_USER_FEEDBACK", prompt)
         self.assertIn("pr_context: available", prompt)
         self.assertIn("pr_number: #10", prompt)
         self.assertIn("pr_head_sha: abc123", prompt)
@@ -1215,6 +1218,9 @@ Blocking reasons:
         self.assertIn("открой/read linked job logs", prompt)
         self.assertNotIn("ghp_abcdef1234567890", prompt)
         self.assertEqual(actions[0].payload["pr_context"]["pr_number"], "#10")
+        self.assertEqual(actions[0].payload["repo"], REPO)
+        self.assertEqual(actions[0].payload["session_id"], "1234567890123456789")
+        self.assertEqual(actions[0].payload["session_state"], "AWAITING_USER_FEEDBACK")
         self.assertIn("[REDACTED]", actions[0].payload["pr_context"]["failed_checks"][0]["details_url"])
         self.assertNotIn(
             "ghp_abcdef1234567890",

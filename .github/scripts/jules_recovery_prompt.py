@@ -413,6 +413,9 @@ def build_prompt_payload(
     summary: dict[str, Any],
     task: dict[str, Any] | None = None,
     task_id: str = "",
+    repo: str = "",
+    session_id: str = "",
+    session_state: str = "",
     mode: str = "continue",
     stale_reason: str = "",
     max_continue_attempts: int = 2,
@@ -430,11 +433,22 @@ def build_prompt_payload(
         "AUTONOMOUS_CONTINUE_TOKEN",
         "",
         "Recovery context для зависшей Jules-сессии:",
+    ]
+    repo = sanitize_text(repo, limit=180)
+    session_id = sanitize_text(session_id, limit=120)
+    session_state = sanitize_text(session_state, limit=80)
+    if repo:
+        context_lines.append(f"- repo: {repo}")
+    if session_id:
+        context_lines.append(f"- session_id: {session_id}")
+    if session_state:
+        context_lines.append(f"- session_state: {session_state}")
+    context_lines.extend([
         f"- task_id: {resolved_task_id or 'unknown'}",
         f"- wait_reason: {wait_reason}",
         f"- prompt_action: {prompt_action}",
         f"- continue_attempts: {continue_attempts}/{max_continue_attempts}",
-    ]
+    ])
     if stale_reason:
         context_lines.append(f"- stale_reason: {sanitize_text(stale_reason, limit=240)}")
     if excerpt:
@@ -472,6 +486,9 @@ def build_prompt_payload(
         "prompt_action": prompt_action,
         "continue_attempts": continue_attempts,
         "max_continue_attempts": max_continue_attempts,
+        "repo": repo,
+        "session_id": session_id,
+        "session_state": session_state,
         "summary": summary,
         "pr_context": pr_context or {},
         "prompt": prompt,
@@ -483,6 +500,9 @@ def build_from_activities(
     activities: list[dict[str, Any]],
     manifest: dict[str, Any] | None = None,
     task_id: str = "",
+    repo: str = "",
+    session_id: str = "",
+    session_state: str = "",
     mode: str = "continue",
     stale_reason: str = "",
     max_continue_attempts: int = 2,
@@ -497,6 +517,9 @@ def build_from_activities(
         summary=summary,
         task=task,
         task_id=resolved_task_id,
+        repo=repo,
+        session_id=session_id,
+        session_state=session_state,
         mode=mode,
         stale_reason=stale_reason,
         max_continue_attempts=max_continue_attempts,
@@ -521,6 +544,9 @@ def command_build(args: argparse.Namespace) -> int:
         activities=activities,
         manifest=manifest,
         task_id=args.task_id,
+        repo=args.repo,
+        session_id=args.session_id,
+        session_state=args.session_state,
         mode=args.mode,
         stale_reason=args.stale_reason,
         max_continue_attempts=args.max_continue_attempts,
@@ -534,6 +560,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--activities", required=True)
     parser.add_argument("--manifest", default="agent_tasks.json")
     parser.add_argument("--task-id", default="")
+    parser.add_argument("--repo", default="")
+    parser.add_argument("--session-id", default="")
+    parser.add_argument("--session-state", default="")
     parser.add_argument("--mode", choices=("continue", "stale"), default="continue")
     parser.add_argument("--stale-reason", default="")
     parser.add_argument("--max-continue-attempts", type=int, default=2)

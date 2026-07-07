@@ -95,10 +95,19 @@ class JulesRecoveryPromptTest(unittest.TestCase):
                 )
             ],
             manifest=manifest,
+            repo="Omnividente/notion-abuz_ai",
+            session_id="1234567890123456789",
+            session_state="AWAITING_USER_FEEDBACK",
             max_continue_attempts=2,
         )
 
         prompt = payload["prompt"]
+        self.assertEqual(payload["repo"], "Omnividente/notion-abuz_ai")
+        self.assertEqual(payload["session_id"], "1234567890123456789")
+        self.assertEqual(payload["session_state"], "AWAITING_USER_FEEDBACK")
+        self.assertIn("repo: Omnividente/notion-abuz_ai", prompt)
+        self.assertIn("session_id: 1234567890123456789", prompt)
+        self.assertIn("session_state: AWAITING_USER_FEEDBACK", prompt)
         self.assertIn("task_id: task-one", prompt)
         self.assertIn("wait_reason: transient_api_or_partial_context", prompt)
         self.assertIn("prompt_action: repeat_targeted_context_collection", prompt)
@@ -116,6 +125,9 @@ class JulesRecoveryPromptTest(unittest.TestCase):
             },
             task={"id": "task-one", "status": "todo", "risk": "low", "area": "automation"},
             task_id="task-one",
+            repo="Omnividente/notion-abuz_ai",
+            session_id="sessions/1234567890123456789?token=ghp_abcdef1234567890",
+            session_state="AWAITING_USER_FEEDBACK",
             pr_context={
                 "repo": "Omnividente/notion-abuz_ai",
                 "pr_number": "#401",
@@ -132,6 +144,9 @@ class JulesRecoveryPromptTest(unittest.TestCase):
         )
 
         prompt = payload["prompt"]
+        self.assertIn("repo: Omnividente/notion-abuz_ai", prompt)
+        self.assertIn("session_id: sessions/1234567890123456789?token=[REDACTED]", prompt)
+        self.assertIn("session_state: AWAITING_USER_FEEDBACK", prompt)
         self.assertIn("pr_context: available", prompt)
         self.assertIn("pr_number: #401", prompt)
         self.assertIn("CI / validate: failure", prompt)
