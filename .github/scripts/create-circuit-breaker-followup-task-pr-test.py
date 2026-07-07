@@ -60,6 +60,21 @@ class CircuitBreakerFollowupTaskTest(unittest.TestCase):
             ),
         )
 
+    def test_conflict_recovery_followup_task_uses_separate_failure_class(self) -> None:
+        task = module.make_followup_task(
+            pr_number=400,
+            source_sha="abc123",
+            source_task_id="proxy-runtime-fix",
+            source_finding_id=module.CONFLICT_RECOVERY_FINDING_ID,
+            reason="pull_request checks do not run while the PR is dirty",
+        )
+
+        self.assertTrue(task["id"].startswith("automation-conflict-loop-pr-400-"))
+        self.assertEqual(task["source_finding_id"], module.CONFLICT_RECOVERY_FINDING_ID)
+        self.assertIn("stopped conflict recovery", task["title"])
+        self.assertIn("conflict-recovery prompts did not converge", task["description"])
+        self.assertIn("merge conflict state", task["acceptance"][0])
+
     def test_existing_followup_task_is_deduped_by_id_or_hash(self) -> None:
         digest = module.followup_hash(
             pr_number=362,
@@ -115,7 +130,10 @@ class CircuitBreakerFollowupTaskTest(unittest.TestCase):
         }
 
         self.assertEqual(
-            module.pending_followup_task_ids(manifest),
+            module.pending_followup_task_ids(
+                manifest,
+                source_finding_id=module.QUALITY_FIX_FINDING_ID,
+            ),
             ["automation-quality-loop-pr-11-b", "automation-quality-loop-pr-12-c"],
         )
 

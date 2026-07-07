@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Open a manifest-only PR with a diagnostic task for a stopped quality loop."""
+"""Open a manifest-only PR with a diagnostic task for a stopped recovery loop."""
 
 from __future__ import annotations
 
@@ -19,6 +19,24 @@ from typing import Any
 RECOVERY_MARKER = "AUTONOMOUS_CIRCUIT_BREAKER_FOLLOWUP_TASK"
 RECOVERY_BRANCH_PREFIX = "automation-circuit-breaker-followup"
 MAX_PENDING_FOLLOWUP_TASKS = 1
+QUALITY_FIX_FINDING_ID = "quality_fix_circuit_breaker"
+CONFLICT_RECOVERY_FINDING_ID = "conflict_recovery_circuit_breaker"
+FOLLOWUP_KINDS = {
+    QUALITY_FIX_FINDING_ID: {
+        "task_prefix": "automation-quality-loop-pr",
+        "title": "Diagnose stopped quality loop for autonomous PR",
+        "failure": "quality-fix prompts did not converge",
+        "evidence": "quality gate output, recovery-router ledger evidence, or CI artifacts",
+        "loop": "quality-loop diagnostic",
+    },
+    CONFLICT_RECOVERY_FINDING_ID: {
+        "task_prefix": "automation-conflict-loop-pr",
+        "title": "Diagnose stopped conflict recovery for autonomous PR",
+        "failure": "conflict-recovery prompts did not converge",
+        "evidence": "PR comments, merge conflict state, recovery-router ledger evidence, or CI artifacts",
+        "loop": "conflict-recovery diagnostic",
+    },
+}
 RECOVERY_LABELS = {
     "automation-recovery": {
         "color": "5319e7",
@@ -70,22 +88,42 @@ def sanitize_reason(reason: str, *, limit: int = 500) -> str:
     cleaned = URL_RE.sub("[redacted-url]", reason)
     cleaned = SECRET_RE.sub("[redacted-secret]", cleaned)
     cleaned = "\n".join(line.rstrip() for line in cleaned.splitlines()).strip()
-    return cleaned[:limit] or "quality-fix circuit breaker exhausted repeated recovery attempts"
+    return cleaned[:limit] or "circuit breaker exhausted repeated recovery attempts"
 
 
-def followup_hash(*, pr_number: int, source_sha: str, source_task_id: str) -> str:
+def followup_hash(
+    *,
+    pr_number: int,
+    source_sha: str,
+    source_task_id: str,
+    source_finding_id: str = QUALITY_FIX_FINDING_ID,
+) -> str:
     payload = {
         "pr_number": int(pr_number),
         "source_sha": source_sha,
         "source_task_id": source_task_id,
     }
+    if source_finding_id != QUALITY_FIX_FINDING_ID:
+        payload["source_finding_id"] = source_finding_id
     raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:12]
 
 
-def followup_task_id(*, pr_number: int, source_sha: str, source_task_id: str) -> str:
-    digest = followup_hash(pr_number=pr_number, source_sha=source_sha, source_task_id=source_task_id)
-    return f"automation-quality-loop-pr-{int(pr_number)}-{digest[:8]}"
+def followup_task_id(
+    *,
+    pr_number: int,
+    source_sha: str,
+    source_task_id: str,
+    source_finding_id: str = QUALITY_FIX_FINDING_ID,
+) -> str:
+    kind = FOLLOWUP_KINDS[source_finding_id]
+    digest = followup_hash(
+        pr_number=pr_number,
+        source_sha=source_sha,
+        source_task_id=source_task_id,
+        source_finding_id=source_finding_id,
+    )
+    return f"{kind['task_prefix']}-{int(pr_number)}-{digest[:8]}"
 
 
 def existing_followup_task(manifest: dict[str, Any], *, task_id: str, digest: str) -> bool:
@@ -97,14 +135,14 @@ def existing_followup_task(manifest: dict[str, Any], *, task_id: str, digest: st
     return False
 
 
-def pending_followup_task_ids(manifest: dict[str, Any]) -> list[str]:
+def pending_followup_task_ids(manifest: dict[str, Any], *, source_finding_id: str) -> list[str]:
     task_ids: list[str] = []
     for task in manifest.get("tasks", []):
         if not isinstance(task, dict):
             continue
         if task.get("status") not in {"todo", "in_progress"}:
             continue
-        if task.get("source_finding_id") != "quality_fix_circuit_breaker":
+        if task.get("source_finding_id") != source_finding_id:
             continue
         task_id = str(task.get("id") or "")
         if task_id:
@@ -118,29 +156,41 @@ def make_followup_task(
     source_sha: str,
     source_task_id: str,
     reason: str,
+    source_finding_id: str = QUALITY_FIX_FINDING_ID,
 ) -> dict[str, Any]:
-    digest = followup_hash(pr_number=pr_number, source_sha=source_sha, source_task_id=source_task_id)
-    task_id = followup_task_id(pr_number=pr_number, source_sha=source_sha, source_task_id=source_task_id)
+    kind = FOLLOWUP_KINDS[source_finding_id]
+    digest = followup_hash(
+        pr_number=pr_number,
+        source_sha=source_sha,
+        source_task_id=source_task_id,
+        source_finding_id=source_finding_id,
+    )
+    task_id = followup_task_id(
+        pr_number=pr_number,
+        source_sha=source_sha,
+        source_task_id=source_task_id,
+        source_finding_id=source_finding_id,
+    )
     source_scope = source_task_id or "unknown task"
     return {
         "id": task_id,
-        "title": f"Diagnose stopped quality loop for autonomous PR #{int(pr_number)}",
+        "title": f"{kind['title']} #{int(pr_number)}",
         "area": "automation",
         "risk": "low",
         "status": "todo",
         "description": (
             f"Autonomous recovery circuit breaker stopped PR #{int(pr_number)} at SHA `{source_sha}` "
-            f"for `{source_scope}`. Diagnose why repeated quality-fix prompts did not converge. "
+            f"for `{source_scope}`. Diagnose why repeated {kind['failure']}. "
             f"Sanitized reason: {sanitize_reason(reason)}"
         ),
         "allowed_paths": FOLLOWUP_ALLOWED_PATHS,
         "acceptance": [
             (
                 f"Root cause for stopped autonomous PR #{int(pr_number)} is identified from PR comments, "
-                "quality gate output, recovery-router ledger evidence, or CI artifacts."
+                f"{kind['evidence']}."
             ),
             (
-                "The automation or manifest state is improved so the same deterministic quality loop is "
+                "The automation or manifest state is improved so the same deterministic recovery loop is "
                 "not repeated, or this diagnostic task is blocked with a concrete missing-evidence reason."
             ),
             (
@@ -148,7 +198,7 @@ def make_followup_task(
                 "transcripts, production URLs, or destructive actions are introduced."
             ),
         ],
-        "source_finding_id": "quality_fix_circuit_breaker",
+        "source_finding_id": source_finding_id,
         "source_document": "jules-recovery-router",
         "source_reference": f"pull/{int(pr_number)}@{source_sha}",
         "source_task_id": source_task_id,
@@ -200,12 +250,24 @@ def open_followup_pr(
     source_sha: str,
     source_task_id: str,
     reason: str,
+    source_finding_id: str,
     token: str,
     repo: str,
     api_url: str,
 ) -> int:
-    digest = followup_hash(pr_number=pr_number, source_sha=source_sha, source_task_id=source_task_id)
-    task_id = followup_task_id(pr_number=pr_number, source_sha=source_sha, source_task_id=source_task_id)
+    digest = followup_hash(
+        pr_number=pr_number,
+        source_sha=source_sha,
+        source_task_id=source_task_id,
+        source_finding_id=source_finding_id,
+    )
+    kind = FOLLOWUP_KINDS[source_finding_id]
+    task_id = followup_task_id(
+        pr_number=pr_number,
+        source_sha=source_sha,
+        source_task_id=source_task_id,
+        source_finding_id=source_finding_id,
+    )
     branch = f"{RECOVERY_BRANCH_PREFIX}-{int(pr_number)}-{digest[:8]}"
 
     open_pulls = request("GET", f"/repos/{repo}/pulls?state=open&per_page=100", token=token, api_url=api_url) or []
@@ -220,12 +282,13 @@ def open_followup_pr(
     if existing_followup_task(manifest, task_id=task_id, digest=digest):
         print(f"Circuit-breaker follow-up task already exists: {task_id}.")
         return 0
-    pending_followups = pending_followup_task_ids(manifest)
+    pending_followups = pending_followup_task_ids(manifest, source_finding_id=source_finding_id)
     if len(pending_followups) >= MAX_PENDING_FOLLOWUP_TASKS:
+        loop_name = FOLLOWUP_KINDS[source_finding_id]["loop"]
         print(
             "Circuit-breaker follow-up task already pending: "
             + ", ".join(pending_followups[:MAX_PENDING_FOLLOWUP_TASKS])
-            + ". Resolve or block it before adding another quality-loop diagnostic."
+            + f". Resolve or block it before adding another {loop_name}."
         )
         return 0
 
@@ -238,6 +301,7 @@ def open_followup_pr(
             source_sha=source_sha,
             source_task_id=source_task_id,
             reason=reason,
+            source_finding_id=source_finding_id,
         )
     )
     write_manifest(manifest_path, manifest)
@@ -260,7 +324,7 @@ def open_followup_pr(
     body = (
         f"{RECOVERY_MARKER}\n\n"
         "This manifest-only PR was generated after the Jules recovery circuit breaker stopped "
-        "a repeated quality-fix loop.\n\n"
+        f"a repeated {kind['loop']}.\n\n"
         "Scope:\n"
         "- adds one diagnostic automation task to `agent_tasks.json`\n"
         "- does not change runtime product code\n"
@@ -307,6 +371,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--pr-number", required=True, type=int)
     parser.add_argument("--source-sha", required=True)
     parser.add_argument("--source-task-id", default="")
+    parser.add_argument(
+        "--source-finding-id",
+        choices=sorted(FOLLOWUP_KINDS),
+        default=QUALITY_FIX_FINDING_ID,
+    )
     parser.add_argument("--reason", default="quality-fix circuit breaker exhausted repeated recovery attempts")
     args = parser.parse_args(argv)
 
@@ -324,6 +393,7 @@ def main(argv: list[str] | None = None) -> int:
             source_sha=args.source_sha,
             source_task_id=args.source_task_id.strip(),
             reason=args.reason,
+            source_finding_id=args.source_finding_id,
             token=token,
             repo=repo,
             api_url=api_url,

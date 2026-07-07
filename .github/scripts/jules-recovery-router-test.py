@@ -656,6 +656,36 @@ Previous router prompt:
         self.assertIn("abc123", args)
         self.assertIn("--source-task-id", args)
         self.assertIn("proxy-runtime-fix", args)
+        self.assertIn("--source-finding-id", args)
+        self.assertIn("quality_fix_circuit_breaker", args)
+        self.assertTrue(run.call_args.kwargs["check"])
+
+    def test_conflict_recovery_followup_task_execution_calls_helper(self) -> None:
+        action = router.RecoveryAction(
+            type="conflict_recovery_followup_task",
+            dedupe_key="conflict-recovery-followup-task:400:abc123:followup",
+            reason="stopped conflict loop",
+            ttl_minutes=router.QUALITY_FIX_FOLLOWUP_TTL_MINUTES,
+            payload={
+                "pr_number": 400,
+                "source_sha": "abc123",
+                "source_task_id": "proxy-runtime-fix",
+                "reason": "dirty PR stayed unresolved",
+            },
+        )
+        client = FakeGitHubClient([])
+
+        with patch.object(router.subprocess, "run") as run:
+            router.execute_action(client, action)
+
+        args = run.call_args.args[0]
+        self.assertIn(".github/scripts/create-circuit-breaker-followup-task-pr.py", args)
+        self.assertIn("--pr-number", args)
+        self.assertIn("400", args)
+        self.assertIn("--source-sha", args)
+        self.assertIn("abc123", args)
+        self.assertIn("--source-finding-id", args)
+        self.assertIn("conflict_recovery_circuit_breaker", args)
         self.assertTrue(run.call_args.kwargs["check"])
 
     def test_failed_check_recovery_execution_comments_and_messages_jules(self) -> None:
@@ -816,6 +846,55 @@ Previous router prompt:
             comments=["<!-- AUTONOMOUS_RECOVERY_ROUTER action=quality-fix-circuit-breaker sha=ddd444 -->"],
         )
         followup_task_id = router.quality_fix_followup_task_id(stopped, TASK_IDS)
+
+        actions = plan(
+            state(
+                open_pulls=[stopped],
+                selector={"selected": True, "task_id": "automation-health-failed-session-86122315"},
+                task_details={followup_task_id: {"id": followup_task_id, "status": "todo"}},
+            )
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "dispatch_workflow")
+        self.assertEqual(actions[0].payload["workflow"], "jules_next_task.yml")
+
+    def test_stopped_conflict_circuit_breaker_pr_creates_followup_task(self) -> None:
+        stopped = pr(
+            number=400,
+            labels=["jules", "human-review", "no-automerge", "stop-loop"],
+            sha="bfe8471",
+            body="<!-- AUTONOMOUS_TASK_EVIDENCE\ntask_id: proxy-runtime-fix\n-->",
+            comments=[
+                "<!-- AUTONOMOUS_RECOVERY_ROUTER action=conflict-recovery-circuit-breaker sha=bfe8471 -->",
+            ],
+        )
+
+        actions = plan(
+            state(
+                open_pulls=[stopped],
+                selector={"selected": True, "task_id": "automation-health-failed-session-86122315"},
+            )
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "conflict_recovery_followup_task")
+        self.assertEqual(actions[0].payload["pr_number"], 400)
+        self.assertEqual(actions[0].payload["source_sha"], "bfe8471")
+        self.assertEqual(actions[0].payload["source_task_id"], "proxy-runtime-fix")
+        self.assertTrue(actions[0].payload["task_id"].startswith("automation-conflict-loop-pr-400-"))
+
+    def test_existing_conflict_circuit_breaker_followup_task_is_not_recreated(self) -> None:
+        stopped = pr(
+            number=400,
+            labels=["jules", "human-review", "no-automerge", "stop-loop"],
+            sha="bfe8471",
+            body="<!-- AUTONOMOUS_TASK_EVIDENCE\ntask_id: proxy-runtime-fix\n-->",
+            comments=[
+                "<!-- AUTONOMOUS_RECOVERY_ROUTER action=conflict-recovery-circuit-breaker sha=bfe8471 -->",
+            ],
+        )
+        followup_task_id = router.conflict_recovery_followup_task_id(stopped, TASK_IDS)
 
         actions = plan(
             state(
