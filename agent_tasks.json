@@ -6599,7 +6599,7 @@
     },
     {
       "id": "automation-closed-stopped-pr-reconciliation",
-      "status": "todo",
+      "status": "blocked",
       "area": "automation",
       "risk": "low",
       "title": "Reconcile manifest tasks after stopped PRs are closed",
@@ -6617,7 +6617,8 @@
         "A focused offline test covers the mapping from PR number/source_reference to task status or blocked_reason.",
         "No secrets, raw transcripts, production URLs, or product runtime files are introduced."
       ],
-      "source_reference": "closed PR cleanup after #313/#351/#400/#421/#446"
+      "source_reference": "closed PR cleanup after #313/#351/#400/#421/#446",
+      "blocked_reason": "Paused after repeated Jules FAILED sessions: 16667791187781422932. Resume only with human review or concrete live smoke/transcript/CI/offline reproduction evidence."
     },
     {
       "id": "automation-open-ready-stale-branch-summary",
