@@ -226,6 +226,14 @@ class RecoveryRouterTest(unittest.TestCase):
         self.assertIn('echo "- Mode:', text)
         self.assertIn("github.event_name == 'pull_request_target' && 'plan' || inputs.mode || 'act'", text)
 
+    def test_next_task_dispatches_health_for_no_todo_and_no_eligible_queues(self) -> None:
+        text = NEXT_TASK_WORKFLOW_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("Dispatch automation health recovery for starved queue", text)
+        self.assertIn("steps.select-task.outputs.reason_code == 'no_eligible_autonomous_task'", text)
+        self.assertIn("steps.select-task.outputs.reason_code == 'no_todo_tasks'", text)
+        self.assertIn("actions/workflows/automation_health.yml/dispatches", text)
+
     def test_burst_monitor_dispatches_next_after_touching_last_session(self) -> None:
         text = BURST_WORKFLOW_PATH.read_text(encoding="utf-8")
 
@@ -1418,6 +1426,24 @@ Blocking reasons:
         self.assertEqual(len(actions), 1)
         self.assertEqual(actions[0].payload["workflow"], "automation_health.yml")
         self.assertEqual(actions[0].payload["inputs"]["mode"], "enforce")
+
+    def test_no_todo_task_dispatches_health_enforce(self) -> None:
+        actions = plan(
+            state(
+                selector={
+                    "selected": False,
+                    "reason_code": "no_todo_tasks",
+                    "reason": "no todo tasks are available",
+                    "todo_count": 0,
+                    "eligible_count": 0,
+                }
+            )
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].payload["workflow"], "automation_health.yml")
+        self.assertEqual(actions[0].payload["inputs"]["mode"], "enforce")
+        self.assertIn("No eligible autonomous task", actions[0].reason)
 
     def test_no_eligible_task_beats_stale_unattended_monitor(self) -> None:
         actions = plan(

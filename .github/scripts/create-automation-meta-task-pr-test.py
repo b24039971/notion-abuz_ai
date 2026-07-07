@@ -88,6 +88,19 @@ class AutomationMetaTaskTest(unittest.TestCase):
         self.assertIn(".github/scripts/automation-health-report.py", plan.tasks[0]["allowed_paths"])
         self.assertIn("agent_tasks.json", plan.tasks[0]["allowed_paths"])
 
+    def test_todo_below_minimum_creates_actionable_manifest_task(self) -> None:
+        plan = meta.plan_meta_tasks(
+            health_report(finding("todo_below_minimum")),
+            manifest(),
+            max_tasks=3,
+        )
+
+        self.assertEqual(len(plan.tasks), 1)
+        self.assertTrue(plan.tasks[0]["id"].startswith("automation-health-todo-below-minimum-"))
+        self.assertIn("scripts/validate_agent_tasks.py", plan.tasks[0]["allowed_paths"])
+        self.assertIn("scripts/select_agent_task.py", plan.tasks[0]["allowed_paths"])
+        self.assertIn("agent_tasks.json", plan.tasks[0]["allowed_paths"])
+
     def test_existing_hash_is_deduped(self) -> None:
         item = finding("quality_failure")
         existing = {

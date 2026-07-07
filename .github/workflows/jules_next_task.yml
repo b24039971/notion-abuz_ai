@@ -215,10 +215,11 @@ jobs:
           echo "Eligible count: ${{ steps.select-task.outputs.eligible_count }}"
           echo "Rejected count: ${{ steps.select-task.outputs.rejected_count }}"
 
-      - name: Dispatch automation health recovery for empty eligible queue
+      - name: Dispatch automation health recovery for starved queue
         if: >
           steps.select-task.outputs.selected != 'true' &&
-          steps.select-task.outputs.reason_code == 'no_eligible_autonomous_task'
+          (steps.select-task.outputs.reason_code == 'no_eligible_autonomous_task' ||
+           steps.select-task.outputs.reason_code == 'no_todo_tasks')
         env:
           GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
         run: |
@@ -273,7 +274,7 @@ jobs:
             "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/workflows/automation_health.yml/dispatches" \
             -d "${body}"
 
-          echo "Dispatched Automation Health in enforce mode because selector found todo tasks but no eligible autonomous task."
+          echo "Dispatched Automation Health in enforce mode because selector returned ${{ steps.select-task.outputs.reason_code }}."
 
       - name: Detect open autonomous PRs
         id: open-prs
