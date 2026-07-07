@@ -8,6 +8,7 @@ MIN_USER_REPLY_INTERVAL_MINUTES="${MIN_USER_REPLY_INTERVAL_MINUTES:-2}"
 STALE_AWAITING_FEEDBACK_MINUTES="${STALE_AWAITING_FEEDBACK_MINUTES:-10}"
 MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS="${MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS:-2}"
 STALE_IN_PROGRESS_MINUTES="${STALE_IN_PROGRESS_MINUTES:-45}"
+MAX_IN_PROGRESS_SESSION_MINUTES="${MAX_IN_PROGRESS_SESSION_MINUTES:-180}"
 MAX_STALE_IN_PROGRESS_ESCALATIONS="${MAX_STALE_IN_PROGRESS_ESCALATIONS:-2}"
 
 if [ -z "${JULES_API_KEY:-}" ] && [ -z "${JULES_API_KEY_BACKUP:-}" ]; then
@@ -52,6 +53,7 @@ cutoff_epoch="$((now_epoch - LOOKBACK_HOURS * 3600))"
 reply_cooldown_seconds="$((MIN_USER_REPLY_INTERVAL_MINUTES * 60))"
 stale_feedback_seconds="$((STALE_AWAITING_FEEDBACK_MINUTES * 60))"
 stale_in_progress_seconds="$((STALE_IN_PROGRESS_MINUTES * 60))"
+max_in_progress_session_seconds="$((MAX_IN_PROGRESS_SESSION_MINUTES * 60))"
 max_stale_feedback_escalations="$MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS"
 max_stale_in_progress_escalations="$MAX_STALE_IN_PROGRESS_ESCALATIONS"
 
@@ -236,7 +238,11 @@ for i in "${!key_labels[@]}"; do
   while IFS= read -r session_json; do
     session_name="$(jq -r '.name' <<<"$session_json")"
     session_state="$(jq -r '.state // "STATE_UNSPECIFIED"' <<<"$session_json")"
+    session_create_epoch="$(jq -r '((.createTime // .updateTime // "1970-01-01T00:00:00Z") | sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601? // 0)' <<<"$session_json")"
     session_update_epoch="$(jq -r '((.updateTime // .createTime // "1970-01-01T00:00:00Z") | sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601? // 0)' <<<"$session_json")"
+    if [ "${session_create_epoch:-0}" -le 0 ]; then
+      session_create_epoch="$session_update_epoch"
+    fi
 
     if [ -z "$session_name" ] || [ "$session_name" = "null" ]; then
       continue
@@ -337,6 +343,7 @@ for i in "${!key_labels[@]}"; do
           fi
         done
         idle_age="$((now_epoch - newest_activity_epoch))"
+        session_age="$((now_epoch - session_create_epoch))"
 
         if [ "${latest_agent_epoch:-0}" -eq 0 ]; then
           echo "Skipped ${session_name}; no agent activity found for stale in-progress recovery."
@@ -383,6 +390,22 @@ for i in "${!key_labels[@]}"; do
             "$prompt_json" \
             "$max_stale_in_progress_escalations"; then
             echo "::warning::Could not build stale in-progress escalation prompt for ${session_name}; skipping."
+            record_active_task_id "$active_task_id"
+            continue
+          fi
+        elif [ "$max_in_progress_session_seconds" -gt 0 ] && [ "$session_age" -ge "$max_in_progress_session_seconds" ]; then
+          echo "Detected long-running IN_PROGRESS Jules session ${session_name} after $((session_age / 60)) minute(s); sending dynamic recovery prompt."
+          stale_in_progress_sessions+=("${session_name##*/}:long-running:${continue_token_count}/${max_stale_in_progress_escalations}")
+          if ! build_recovery_prompt \
+            "$activities_file" \
+            "${session_name##*/}" \
+            "$session_state" \
+            "$active_task_id" \
+            "stale" \
+            "Jules session stayed IN_PROGRESS for $((session_age / 60)) minute(s) without opening a PR" \
+            "$prompt_json" \
+            "$max_stale_in_progress_escalations"; then
+            echo "::warning::Could not build long-running in-progress recovery prompt for ${session_name}; skipping."
             record_active_task_id "$active_task_id"
             continue
           fi

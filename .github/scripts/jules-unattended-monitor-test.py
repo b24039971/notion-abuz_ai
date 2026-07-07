@@ -72,6 +72,8 @@ if scenario == "routine_question":
     session_name = "sessions/test-routine"
 elif scenario == "in_progress_stale":
     session_name = "sessions/test-in-progress-stale"
+elif scenario == "in_progress_long_running_fresh":
+    session_name = "sessions/test-in-progress-long-running"
 elif scenario == "in_progress_repeat":
     session_name = "sessions/test-in-progress-repeat"
 else:
@@ -80,14 +82,15 @@ task_id = "proxy-runtime-final-answer-mode-stability"
 
 if method == "GET" and url.endswith("/sessions?pageSize=100"):
     state = "IN_PROGRESS" if scenario.startswith("in_progress_") else "AWAITING_USER_FEEDBACK"
-    update_time = iso(now - 4000) if scenario.startswith("in_progress_") else iso(now - 60)
+    update_time = iso(now - 5) if scenario == "in_progress_long_running_fresh" else iso(now - 4000) if scenario.startswith("in_progress_") else iso(now - 60)
+    create_time = iso(now - 20000) if scenario == "in_progress_long_running_fresh" else iso(now - 900)
     payload = {
         "sessions": [
             {
                 "name": session_name,
                 "state": state,
                 "sourceContext": {"source": "sources/github/Omnividente/notion-abuz_ai"},
-                "createTime": iso(now - 900),
+                "createTime": create_time,
                 "updateTime": update_time,
             }
         ]
@@ -118,6 +121,21 @@ elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "
                     "text": (
                         f"selected task id: {task_id}\n"
                         "API error left me with partial context from the previous search."
+                    )
+                },
+            }
+        ]
+    }
+elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "in_progress_long_running_fresh":
+    payload = {
+        "activities": [
+            {
+                "originator": "AGENT",
+                "createTime": iso(now - 10),
+                "message": {
+                    "text": (
+                        f"selected task id: {task_id}\n"
+                        "Still validating recovery evidence before opening a PR."
                     )
                 },
             }
@@ -221,6 +239,7 @@ class JulesUnattendedMonitorTest(unittest.TestCase):
                 "STALE_AWAITING_FEEDBACK_MINUTES": "10",
                 "MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS": "2",
                 "STALE_IN_PROGRESS_MINUTES": "45",
+                "MAX_IN_PROGRESS_SESSION_MINUTES": "180",
                 "MAX_STALE_IN_PROGRESS_ESCALATIONS": "2",
             }
         )
@@ -335,6 +354,38 @@ class JulesUnattendedMonitorTest(unittest.TestCase):
             self.assertEqual(outputs["stale_in_progress_count"], "1")
             self.assertIn("transient_api_or_partial_context", outputs["wait_reason"])
             self.assertIn("repeat_targeted_context_collection", outputs["prompt_action"])
+
+    def test_long_running_in_progress_session_gets_recovery_prompt_even_with_fresh_activity(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            result, output_path, send_body = self.run_monitor(
+                tmp_path,
+                scenario="in_progress_long_running_fresh",
+            )
+
+            self.assertEqual(
+                result.returncode,
+                0,
+                msg=f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}",
+            )
+            self.assertIn("Detected long-running IN_PROGRESS Jules session", result.stdout)
+            self.assertIn("Sent dynamic stale in-progress recovery message", result.stdout)
+            body = json.loads(send_body.read_text(encoding="utf-8"))
+            prompt = body["prompt"]
+            self.assertIn("session_id: test-in-progress-long-running", prompt)
+            self.assertIn(f"task_id: {TASK_ID}", prompt)
+            self.assertIn("Jules session stayed IN_PROGRESS for", prompt)
+            self.assertIn("without opening a PR", prompt)
+
+            outputs = dict(
+                line.split("=", 1)
+                for line in output_path.read_text(encoding="utf-8").splitlines()
+                if "=" in line
+            )
+            self.assertEqual(outputs["active_sessions"], "1")
+            self.assertEqual(outputs["touched_sessions"], "1")
+            self.assertEqual(outputs["stale_in_progress_count"], "1")
+            self.assertIn("test-in-progress-long-running:long-running", outputs["stale_in_progress_sessions"])
 
     def test_repeated_stale_in_progress_limit_deletes_and_blocks_task(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
