@@ -89,13 +89,15 @@ elif scenario == "in_progress_no_agent_repeat":
     session_name = "sessions/test-in-progress-no-agent-repeat"
 elif scenario == "in_progress_repeat":
     session_name = "sessions/test-in-progress-repeat"
+elif scenario == "stopped_in_progress":
+    session_name = "sessions/test-stopped-in-progress"
 else:
     session_name = "sessions/test-repeat-feedback"
 task_id = "proxy-runtime-final-answer-mode-stability"
 
 if method == "GET" and url.endswith("/sessions?pageSize=100"):
-    state = "IN_PROGRESS" if scenario.startswith("in_progress_") else "AWAITING_USER_FEEDBACK"
-    update_time = iso(now - 5) if scenario in {"in_progress_long_running_fresh", "in_progress_no_agent_long_running", "in_progress_no_agent_short_burst", "in_progress_no_agent_token_stale"} else iso(now - 4000) if scenario.startswith("in_progress_") else iso(now - 60)
+    state = "IN_PROGRESS" if scenario.startswith("in_progress_") or scenario == "stopped_in_progress" else "AWAITING_USER_FEEDBACK"
+    update_time = iso(now - 5) if scenario in {"in_progress_long_running_fresh", "in_progress_no_agent_long_running", "in_progress_no_agent_short_burst", "in_progress_no_agent_token_stale"} else iso(now - 4000) if scenario.startswith("in_progress_") or scenario == "stopped_in_progress" else iso(now - 60)
     create_time = iso(now - 300) if scenario == "in_progress_no_agent_short_burst" else iso(now - 20000) if scenario in {"in_progress_long_running_fresh", "in_progress_no_agent_long_running", "in_progress_no_agent_token_stale", "in_progress_no_agent_repeat"} else iso(now - 900)
     payload = {
         "sessions": [
@@ -108,6 +110,23 @@ if method == "GET" and url.endswith("/sessions?pageSize=100"):
             }
         ]
     }
+elif method == "GET" and "/pulls?state=open" in url:
+    payload = []
+    if scenario == "stopped_in_progress":
+        payload = [
+            {
+                "number": 421,
+                "title": task_id,
+                "body": "",
+                "head": {"ref": f"{task_id}-{session_name.split('/')[-1]}"},
+                "labels": [
+                    {"name": "jules"},
+                    {"name": "human-review"},
+                    {"name": "no-automerge"},
+                    {"name": "stop-loop"},
+                ],
+            }
+        ]
 elif method == "GET" and "/actions/variables/JULES_RECENT_SESSION_TASKS" in url:
     payload = {
         "value": json.dumps(
@@ -118,6 +137,21 @@ elif method == "GET" and "/actions/variables/JULES_RECENT_SESSION_TASKS" in url:
                 }
             }
         )
+    }
+elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "stopped_in_progress":
+    payload = {
+        "activities": [
+            {
+                "originator": "AGENT",
+                "createTime": iso(now - 3900),
+                "message": {
+                    "text": (
+                        f"selected task id: {task_id}\n"
+                        "Still waiting on an old stopped autonomous PR."
+                    )
+                },
+            }
+        ]
     }
 elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "routine_question":
     payload = {
@@ -306,7 +340,7 @@ class JulesUnattendedMonitorTest(unittest.TestCase):
         for name in ("JULES_API_KEY_BACKUP", "GITHUB_API_TOKEN", "GITHUB_API_URL"):
             if not extra_env or name not in extra_env:
                 env.pop(name, None)
-        if scenario.startswith("in_progress_no_agent_"):
+        if scenario.startswith("in_progress_no_agent_") or scenario == "stopped_in_progress":
             env["GITHUB_API_TOKEN"] = "fake-gh-token"
             env["GITHUB_API_URL"] = "https://api.github.test"
 
@@ -418,6 +452,35 @@ class JulesUnattendedMonitorTest(unittest.TestCase):
             self.assertEqual(outputs["stale_in_progress_count"], "1")
             self.assertIn("transient_api_or_partial_context", outputs["wait_reason"])
             self.assertIn("repeat_targeted_context_collection", outputs["prompt_action"])
+
+    def test_stopped_task_session_does_not_block_or_receive_recovery_prompt(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            result, output_path, send_body = self.run_monitor(
+                tmp_path,
+                scenario="stopped_in_progress",
+            )
+
+            self.assertEqual(
+                result.returncode,
+                0,
+                msg=f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}",
+            )
+            self.assertIn(f"Stopped autonomous task ids: {TASK_ID}", result.stdout)
+            self.assertIn("Skipped sessions/test-stopped-in-progress", result.stdout)
+            self.assertIn("stopped autonomous PR awaiting review", result.stdout)
+            self.assertFalse(send_body.exists())
+
+            outputs = dict(
+                line.split("=", 1)
+                for line in output_path.read_text(encoding="utf-8").splitlines()
+                if "=" in line
+            )
+            self.assertEqual(outputs["active_sessions"], "0")
+            self.assertEqual(outputs["touched_sessions"], "0")
+            self.assertEqual(outputs["stale_in_progress_count"], "0")
+            self.assertEqual(outputs["skipped_stopped_count"], "1")
+            self.assertIn(f"test-stopped-in-progress:{TASK_ID}", outputs["skipped_stopped_sessions"])
 
     def test_long_running_in_progress_session_gets_recovery_prompt_even_with_fresh_activity(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

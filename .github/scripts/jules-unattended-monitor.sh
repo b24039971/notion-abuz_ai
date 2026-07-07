@@ -34,8 +34,10 @@ tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
 failed_sessions_file="${tmpdir}/failed-sessions.tsv"
 active_task_ids_file="${tmpdir}/active-task-ids.txt"
+stopped_task_ids_file="${tmpdir}/stopped-task-ids.txt"
 : > "$failed_sessions_file"
 : > "$active_task_ids_file"
+: > "$stopped_task_ids_file"
 
 declare -a key_labels=()
 declare -a key_values=()
@@ -67,6 +69,7 @@ api_available=false
 session_ids=()
 stale_waiting_sessions=()
 stale_in_progress_sessions=()
+skipped_stopped_sessions=()
 wait_reason_details=()
 prompt_action_details=()
 prompt_task_id_details=()
@@ -165,11 +168,144 @@ resolve_session_task_id_from_recent_map() {
   ' "$out" || true
 }
 
+load_stopped_task_ids() {
+  if [ -z "${GITHUB_API_TOKEN:-}" ]; then
+    return 0
+  fi
+  if [ -z "${GITHUB_API_URL:-}" ] || [ -z "${GITHUB_REPOSITORY:-}" ]; then
+    return 0
+  fi
+
+  local pulls_file="${tmpdir}/open-pulls.json"
+  local status
+  status="$(curl -sS \
+    -H "Authorization: Bearer ${GITHUB_API_TOKEN}" \
+    -H "Accept: application/vnd.github+json" \
+    -H "X-GitHub-Api-Version: 2022-11-28" \
+    -o "$pulls_file" \
+    -w "%{http_code}" \
+    "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100" || echo "000")"
+
+  if [[ ! "$status" =~ ^2[0-9][0-9]$ ]]; then
+    echo "::warning::Could not list open PRs to identify stopped autonomous tasks; status ${status}."
+    return 0
+  fi
+
+  if ! python3 - "$pulls_file" agent_tasks.json > "$stopped_task_ids_file" <<'PY'
+from __future__ import annotations
+
+import json
+import re
+import sys
+from pathlib import Path
+
+
+STOP_LABELS = {"human-review", "no-automerge", "stop-loop"}
+TASK_ID_RE = re.compile(
+    r"""(?ix)
+    (?:
+        selected \s+ task \s+ id
+        | task_id
+        | "task_id"
+    )
+    \s* [:=] \s*
+    "?
+    ([a-z0-9][a-z0-9_.-]{2,})
+    "?
+    """
+)
+
+
+def labels_of(pr: dict) -> set[str]:
+    labels = pr.get("labels") or []
+    return {
+        str(label.get("name") if isinstance(label, dict) else label)
+        for label in labels
+        if label
+    }
+
+
+def head_ref(pr: dict) -> str:
+    head = pr.get("head") or {}
+    return str(head.get("ref") or "")
+
+
+def task_id_from_pr(pr: dict, task_ids: list[str]) -> str:
+    fields = [
+        str(pr.get("body") or ""),
+        str(pr.get("title") or ""),
+        head_ref(pr),
+    ]
+    for field in fields:
+        match = TASK_ID_RE.search(field)
+        if match:
+            return match.group(1)
+    for task_id in task_ids:
+        if any(task_id and task_id in field for field in fields):
+            return task_id
+    return ""
+
+
+pulls_path = Path(sys.argv[1])
+manifest_path = Path(sys.argv[2])
+pulls = json.loads(pulls_path.read_text(encoding="utf-8"))
+manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+task_ids = [
+    str(task.get("id") or "")
+    for task in manifest.get("tasks", [])
+    if isinstance(task, dict) and task.get("id")
+]
+
+seen: set[str] = set()
+for pr in pulls:
+    if not isinstance(pr, dict):
+        continue
+    if not (labels_of(pr) & STOP_LABELS):
+        continue
+    task_id = task_id_from_pr(pr, task_ids)
+    if not task_id or task_id in seen:
+        continue
+    seen.add(task_id)
+    print(task_id)
+PY
+  then
+    echo "::warning::Could not extract stopped autonomous task ids from open PRs."
+    : > "$stopped_task_ids_file"
+  fi
+
+  if [ -s "$stopped_task_ids_file" ]; then
+    echo "Stopped autonomous task ids: $(paste -sd, "$stopped_task_ids_file")"
+  fi
+}
+
 record_active_task_id() {
   local task_id="$1"
   if [ -n "$task_id" ]; then
     echo "$task_id" >> "$active_task_ids_file"
   fi
+}
+
+task_is_stopped() {
+  local task_id="$1"
+  if [ -z "$task_id" ] || [ ! -s "$stopped_task_ids_file" ]; then
+    return 1
+  fi
+  grep -Fxq -- "$task_id" "$stopped_task_ids_file"
+}
+
+skip_stopped_active_session() {
+  local session_name="$1"
+  local task_id="$2"
+  if ! task_is_stopped "$task_id"; then
+    return 1
+  fi
+
+  echo "Skipped ${session_name}; task ${task_id} is represented by a stopped autonomous PR awaiting review."
+  skipped_stopped_sessions+=("${session_name##*/}:${task_id}")
+  if [ "$active_sessions" -gt 0 ]; then
+    active_sessions=$((active_sessions - 1))
+  fi
+  return 0
 }
 
 build_recovery_prompt() {
@@ -227,6 +363,8 @@ session_epoch_filter='
   | select(ts >= $cutoff)
 '
 
+load_stopped_task_ids
+
 for i in "${!key_labels[@]}"; do
   label="${key_labels[$i]}"
   key="${key_values[$i]}"
@@ -266,6 +404,9 @@ for i in "${!key_labels[@]}"; do
         active_task_id="$(extract_session_task_id "$key" "$session_name" "active")"
         if [ -z "$active_task_id" ]; then
           active_task_id="$(resolve_session_task_id_from_recent_map "$session_name")"
+        fi
+        if skip_stopped_active_session "$session_name" "$active_task_id"; then
+          continue
         fi
         ;;
     esac
@@ -338,6 +479,9 @@ for i in "${!key_labels[@]}"; do
         prompt_task_id="$(jq -r '.task_id // ""' "$prompt_json")"
         if [ -z "$active_task_id" ] && [ -n "$prompt_task_id" ]; then
           active_task_id="$prompt_task_id"
+        fi
+        if skip_stopped_active_session "$session_name" "$active_task_id"; then
+          continue
         fi
 
         newest_activity_epoch="$session_update_epoch"
@@ -542,6 +686,9 @@ for i in "${!key_labels[@]}"; do
     if [ -z "$active_task_id" ] && [ -n "$prompt_task_id" ]; then
       active_task_id="$prompt_task_id"
     fi
+    if skip_stopped_active_session "$session_name" "$active_task_id"; then
+      continue
+    fi
     prompt="$(jq -r '.prompt // ""' "$prompt_json")"
 
     if [ "${latest_agent_epoch:-0}" -eq 0 ]; then
@@ -644,9 +791,11 @@ echo "Active recent Jules sessions for ${SOURCE}: ${active_sessions}"
 echo "Touched Jules sessions: ${touched_sessions}"
 echo "Stale waiting Jules sessions: ${#stale_waiting_sessions[@]}"
 echo "Stale in-progress Jules sessions: ${#stale_in_progress_sessions[@]}"
+echo "Skipped stopped Jules sessions: ${#skipped_stopped_sessions[@]}"
 session_ids_csv="$(IFS=,; echo "${session_ids[*]}")"
 stale_waiting_csv="$(IFS=,; echo "${stale_waiting_sessions[*]}")"
 stale_in_progress_csv="$(IFS=,; echo "${stale_in_progress_sessions[*]}")"
+skipped_stopped_csv="$(IFS=,; echo "${skipped_stopped_sessions[*]}")"
 wait_reason_csv="$(IFS=,; echo "${wait_reason_details[*]}")"
 prompt_action_csv="$(IFS=,; echo "${prompt_action_details[*]}")"
 prompt_task_id_csv="$(IFS=,; echo "${prompt_task_id_details[*]}")"
@@ -661,6 +810,8 @@ continue_attempt_csv="$(IFS=,; echo "${continue_attempt_details[*]}")"
   echo "stale_waiting_count=${#stale_waiting_sessions[@]}"
   echo "stale_in_progress_sessions=${stale_in_progress_csv}"
   echo "stale_in_progress_count=${#stale_in_progress_sessions[@]}"
+  echo "skipped_stopped_sessions=${skipped_stopped_csv}"
+  echo "skipped_stopped_count=${#skipped_stopped_sessions[@]}"
   echo "wait_reason=${wait_reason_csv}"
   echo "prompt_action=${prompt_action_csv}"
   echo "prompt_task_id=${prompt_task_id_csv}"
