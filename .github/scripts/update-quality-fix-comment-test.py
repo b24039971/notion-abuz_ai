@@ -30,6 +30,7 @@ class UpdateQualityFixCommentTest(unittest.TestCase):
 
         self.assertIn(helper.COMMENT_MARKER, body)
         self.assertIn("PR #42", body)
+        self.assertNotIn("follow-up", body.lower())
         self.assertIn("`abc123456789`", body)
         self.assertEqual(body.count(helper.COMMENT_MARKER), 1)
 
@@ -55,6 +56,32 @@ class UpdateQualityFixCommentTest(unittest.TestCase):
         self.assertEqual(body.count(helper.COMMENT_MARKER), 1)
         self.assertIn("new reason", body)
         self.assertIn("old reason", body)
+
+    def test_sanitizes_deferred_task_marker_from_history_and_report(self) -> None:
+        existing = "\n".join(
+            [
+                helper.COMMENT_MARKER,
+                "",
+                "История последних failed SHA/reasons:",
+                "- `abcdef1`: PR body repeatedly mentions follow-up tasks.",
+            ]
+        )
+
+        body = helper.build_body(
+            pr_number=42,
+            head_sha="abcdef2",
+            summary="avoid using the word 'follow-up' in PR body",
+            report=(
+                "# Autonomous PR quality gate\n\n"
+                "Blocking reasons:\n"
+                "- PR body repeatedly mentions follow-up tasks.\n"
+            ),
+            existing_body=existing,
+        )
+
+        self.assertNotIn("follow-up", body.lower())
+        self.assertIn("[deferred-task marker]", body)
+        self.assertIn("Blocking reasons:", body)
 
     def test_main_outputs_existing_comment_id(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

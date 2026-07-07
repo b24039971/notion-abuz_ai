@@ -41,6 +41,7 @@ QUALITY_FIX_CIRCUIT_BREAKER_TTL_MINUTES = 7 * 24 * 60
 QUALITY_FIX_FOLLOWUP_TTL_MINUTES = 7 * 24 * 60
 QUALITY_FIX_CIRCUIT_BREAKER_LABELS = ("human-review", "no-automerge", "stop-loop")
 AUTONOMOUS_PR_STOP_LABELS = set(QUALITY_FIX_CIRCUIT_BREAKER_LABELS)
+DEFERRED_TASK_MARKER_RE = re.compile(r"\bfollow-?up\b", re.IGNORECASE)
 RECOVERY_LABEL_DEFINITIONS = {
     "human-review": {
         "color": "d4c5f9",
@@ -916,8 +917,12 @@ def latest_quality_fix_details(pr: dict[str, Any]) -> str:
         details = details.strip()
         if len(details) > MAX_QUALITY_FIX_DETAILS_CHARS:
             details = details[:MAX_QUALITY_FIX_DETAILS_CHARS].rstrip() + "\n...[truncated]"
-        return details
+        return sanitize_quality_fix_text(details)
     return ""
+
+
+def sanitize_quality_fix_text(value: str) -> str:
+    return DEFERRED_TASK_MARKER_RE.sub("[deferred-task marker]", value)
 
 
 def quality_fix_recovery_attempt_shas(pr: dict[str, Any], ledger: dict[str, Any]) -> list[str]:
@@ -1099,7 +1104,7 @@ def quality_fix_prompt(pr: dict[str, Any]) -> str:
         )
     return (
         f"{marker}\n\n"
-        f"Jules, исправь этот же PR #{number}; не открывай новый PR и не создавай follow-up задачу.\n\n"
+        f"Jules, исправь этот же PR #{number}; не открывай новый PR и не создавай отдельную задачу на потом.\n\n"
         "Что нужно сделать:\n"
         "- исправь deterministic autonomous quality gate failure;\n"
         "- синхронизируй AUTONOMOUS_TASK_EVIDENCE с фактическим статусом задачи в agent_tasks.json;\n"
@@ -1130,7 +1135,7 @@ def conflict_recovery_prompt(pr: dict[str, Any]) -> str:
         "Что нужно сделать:\n"
         "- синхронизируй PR branch с последним `master` (выполни `git fetch origin master` и `git merge origin/master`);\n"
         "- resolve merge conflicts внутри scope текущей задачи и allowed_paths;\n"
-        "- при разрешении конфликтов в agent_tasks.json сохрани актуальную очередь из master и примени только изменение статуса текущей задачи (plus concrete follow-up tasks, если есть);\n"
+        "- при разрешении конфликтов в agent_tasks.json сохрани актуальную очередь из master и примени только изменение статуса текущей задачи (plus concrete newly discovered tasks, если есть);\n"
         "- сохрани один task status/evidence в agent_tasks.json и AUTONOMOUS_TASK_EVIDENCE;\n"
         "- если конфликт нельзя безопасно решить внутри scope, отметь текущую задачу `blocked` с concrete blocked_reason;\n"
         "- запусти релевантные проверки и push исправление в эту же PR ветку.\n\n"
@@ -1184,7 +1189,7 @@ def failed_check_recovery_prompt(pr: dict[str, Any]) -> str:
     return (
         f"{marker}\n\n"
         f"Jules, PR #{number} has failed GitHub Actions checks on SHA `{sha}`. "
-        "Исправь этот же PR; не открывай новый PR и не создавай follow-up задачу.\n\n"
+        "Исправь этот же PR; не открывай новый PR и не создавай отдельную задачу на потом.\n\n"
         "Failed checks:\n"
         f"{checks_block}\n\n"
         f"{changed_files_block(pr)}\n\n"

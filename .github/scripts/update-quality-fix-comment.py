@@ -13,6 +13,7 @@ from typing import Any
 COMMENT_MARKER = "<!-- AUTONOMOUS_QUALITY_FIX_REQUEST pr-level -->"
 HISTORY_RE = re.compile(r"^-\s+`(?P<sha>[0-9a-f]{7,40})`:\s+(?P<reason>.+)$")
 MAX_HISTORY = 5
+DEFERRED_TASK_MARKER_RE = re.compile(r"\bfollow-?up\b", re.IGNORECASE)
 
 
 def load_comments(path: Path) -> list[dict[str, Any]]:
@@ -31,7 +32,12 @@ def find_existing_comment(comments: list[dict[str, Any]]) -> dict[str, Any] | No
 
 def clean_summary(value: str) -> str:
     one_line = " ".join(value.split())
-    return one_line[:500] if one_line else "quality gate failed"
+    sanitized = sanitize_quality_text(one_line)
+    return sanitized[:500] if sanitized else "quality gate failed"
+
+
+def sanitize_quality_text(value: str) -> str:
+    return DEFERRED_TASK_MARKER_RE.sub("[deferred-task marker]", value)
 
 
 def history_from_body(body: str) -> list[tuple[str, str]]:
@@ -39,7 +45,7 @@ def history_from_body(body: str) -> list[tuple[str, str]]:
     for line in body.splitlines():
         match = HISTORY_RE.match(line.strip())
         if match:
-            history.append((match.group("sha"), match.group("reason")))
+            history.append((match.group("sha"), sanitize_quality_text(match.group("reason"))))
     return history
 
 
@@ -66,7 +72,7 @@ def build_body(
     lines = [
         COMMENT_MARKER,
         "",
-        f"Jules, исправь этот же PR #{pr_number}; не открывай новый PR и не создавай follow-up задачу.",
+        f"Jules, исправь этот же PR #{pr_number}; не открывай новый PR и не создавай отдельную задачу на потом.",
         "",
         "Что нужно сделать:",
         "- исправь deterministic autonomous quality gate failure ниже;",
@@ -80,7 +86,7 @@ def build_body(
         "История последних failed SHA/reasons:",
     ]
     lines.extend(f"- `{sha}`: {reason}" for sha, reason in history)
-    lines.extend(["", report.strip(), ""])
+    lines.extend(["", sanitize_quality_text(report.strip()), ""])
     return "\n".join(lines)
 
 

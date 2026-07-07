@@ -457,6 +457,7 @@ class RecoveryRouterTest(unittest.TestCase):
         self.assertEqual(actions[0].payload["pr_number"], 10)
         self.assertTrue(actions[0].payload["comment_needed"])
         self.assertIn("исправь этот же PR #10", actions[0].payload["body"])
+        self.assertNotIn("follow-up", actions[0].payload["body"].lower())
         self.assertEqual(actions[0].payload["session_id"], "1234567890123456789")
 
     def test_quality_fix_prompt_includes_latest_quality_gate_details(self) -> None:
@@ -479,7 +480,8 @@ New task ids:
         self.assertEqual(len(actions), 1)
         body = actions[0].payload["body"]
         self.assertIn("Детали текущего quality gate failure", body)
-        self.assertIn("PR body repeatedly mentions follow-up tasks", body)
+        self.assertNotIn("follow-up", body.lower())
+        self.assertIn("PR body repeatedly mentions [deferred-task marker] tasks", body)
         self.assertIn("proxy-observability-json-tool-call-mode-loss-test-more", body)
 
     def test_quality_fix_prompt_ignores_nested_marker_inside_recovery_comments(self) -> None:
