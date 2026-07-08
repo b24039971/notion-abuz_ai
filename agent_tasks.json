@@ -7161,7 +7161,7 @@
     },
     {
       "id": "audit-frontend-dashboard-docs",
-      "status": "todo",
+      "status": "done",
       "area": "docs",
       "risk": "low",
       "title": "Audit frontend dashboard API usage docs",
@@ -7172,6 +7172,21 @@
       ],
       "acceptance": [
         "The docs/dashboard.md file accurately reflects API changes made in the dashboard."
+      ]
+    },
+    {
+      "id": "audit-account-discovery-timeout",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit account discovery timeouts",
+      "description": "Ensure DiscoverAccountFromToken applies explicit HTTP timeouts when calling Notion API.",
+      "allowed_paths": [
+        "internal/proxy/account_api.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "DiscoverAccountFromToken uses client with configured timeout."
       ]
     }
   ]

@@ -11,7 +11,8 @@ Two distinct auth surfaces:
 
 After signing in through `/dashboard/`, the frontend uses the `dashboard_session` cookie to access:
 
-- `/admin/accounts` (incl. `DELETE /admin/accounts/{email}`)
+- `/admin/accounts` (incl. `POST /admin/accounts/add`, `POST /admin/accounts/delete`, and `DELETE /admin/accounts/{email}`)
+- `/admin/metrics`
 - `/admin/models`
 - `/admin/refresh`
 - `/admin/settings`
@@ -98,6 +99,8 @@ The reverse proxy auto-handles:
 
 ## Account ops
 
-- **Delete** — `DELETE /admin/accounts/{email}` removes the matching JSON file from `accounts/` and drops the live pool entry. Useful for retired accounts so they don't poison the picker
+- **Add** — `POST /admin/accounts/add` creates a new account from token_v2, calling Notion APIs to discover workspace and quota.
+- **Delete** — `POST /admin/accounts/delete` (and the REST equivalent `DELETE /admin/accounts/{email}`) removes the matching JSON file from `accounts/` and drops the live pool entry.
 - **Refresh** — `POST /admin/refresh` runs the quota / models check across the whole pool. The endpoint returns `started: false` if a refresh is already in flight
 - **Settings** — `PUT /admin/settings` is idempotent and persists to `config.yaml` via YAML node manipulation (so comments survive)
+- **Metrics** — `GET /admin/metrics` exports internal context loss and tool mode loss counters for telemetry/observability.
