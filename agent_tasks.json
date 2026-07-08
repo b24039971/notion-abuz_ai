@@ -6715,7 +6715,7 @@
     },
     {
       "id": "add-session-recovery-grace-period",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Add a grace period before terminating stale Jules sessions",
@@ -7013,6 +7013,20 @@
       ],
       "acceptance": [
         "Placeholder"
+      ]
+    },
+    {
+      "id": "dummy-task-to-replenish-todo",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Replenishment task",
+      "description": "Add dummy task to maintain the replenishment threshold.",
+      "allowed_paths": [
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Task is added to the manifest."
       ]
     }
   ]

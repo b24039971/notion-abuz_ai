@@ -67,6 +67,8 @@ no_agent_in_progress_seconds="$((NO_AGENT_IN_PROGRESS_MINUTES * 60))"
 no_agent_stale_in_progress_seconds="$((NO_AGENT_STALE_IN_PROGRESS_MINUTES * 60))"
 max_stale_feedback_escalations="$MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS"
 max_stale_in_progress_escalations="$MAX_STALE_IN_PROGRESS_ESCALATIONS"
+TERMINATION_GRACE_PERIOD_MINUTES="${TERMINATION_GRACE_PERIOD_MINUTES:-5}"
+termination_grace_period_seconds="$((TERMINATION_GRACE_PERIOD_MINUTES * 60))"
 
 active_sessions=0
 touched_sessions=0
@@ -584,6 +586,12 @@ for i in "${!key_labels[@]}"; do
           fi
 
           if [ "$continue_token_count" -ge "$max_stale_in_progress_escalations" ]; then
+            token_age="$((now_epoch - latest_token_epoch))"
+            if [ "$token_age" -lt "$termination_grace_period_seconds" ]; then
+              echo "Skipped deletion of ${session_name}; session is in its ${TERMINATION_GRACE_PERIOD_MINUTES} minute termination grace period (${token_age}s old)."
+              record_active_task_id "$active_task_id"
+              continue
+            fi
             echo "Autonomous in-progress recovery limit reached for ${session_name} without agent activity; deleting stale session and blocking task."
             record_prompt_detail "${session_name##*/}" "$prompt_json" "$max_stale_in_progress_escalations"
             if [ -n "$active_task_id" ]; then
@@ -662,6 +670,12 @@ for i in "${!key_labels[@]}"; do
         fi
 
         if [ "$continue_token_count" -ge "$max_stale_in_progress_escalations" ]; then
+          token_age="$((now_epoch - latest_token_epoch))"
+          if [ "$token_age" -lt "$termination_grace_period_seconds" ]; then
+            echo "Skipped deletion of ${session_name}; session is in its ${TERMINATION_GRACE_PERIOD_MINUTES} minute termination grace period (${token_age}s old)."
+            record_active_task_id "$active_task_id"
+            continue
+          fi
           echo "Autonomous in-progress recovery limit reached for ${session_name}; deleting stale session and blocking task."
           record_prompt_detail "${session_name##*/}" "$prompt_json" "$max_stale_in_progress_escalations"
           if [ -n "$active_task_id" ]; then
@@ -790,6 +804,11 @@ for i in "${!key_labels[@]}"; do
         continue
       fi
       if [ "$continue_token_count" -ge "$max_stale_feedback_escalations" ]; then
+        if [ "$token_age" -lt "$termination_grace_period_seconds" ]; then
+          echo "Skipped deletion of ${session_name}; session is in its ${TERMINATION_GRACE_PERIOD_MINUTES} minute termination grace period (${token_age}s old)."
+          record_active_task_id "$active_task_id"
+          continue
+        fi
         echo "Autonomous continue limit reached for ${session_name}; deleting stale session and blocking task."
         record_prompt_detail "${session_name##*/}" "$prompt_json"
         if [ -n "$active_task_id" ]; then
@@ -828,6 +847,12 @@ for i in "${!key_labels[@]}"; do
     fi
 
     if [ "$continue_token_count" -ge "$max_stale_feedback_escalations" ]; then
+      token_age="$((now_epoch - latest_token_epoch))"
+      if [ "$token_age" -lt "$termination_grace_period_seconds" ]; then
+        echo "Skipped deletion of ${session_name}; session is in its ${TERMINATION_GRACE_PERIOD_MINUTES} minute termination grace period (${token_age}s old)."
+        record_active_task_id "$active_task_id"
+        continue
+      fi
       echo "Autonomous continue limit reached for ${session_name}; deleting repeated feedback session and blocking task."
       record_prompt_detail "${session_name##*/}" "$prompt_json"
       if [ -n "$active_task_id" ]; then

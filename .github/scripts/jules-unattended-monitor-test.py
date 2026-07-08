@@ -92,10 +92,16 @@ elif scenario == "in_progress_unknown_task":
     session_name = "sessions/test-in-progress-unknown"
 elif scenario == "in_progress_no_agent_repeat":
     session_name = "sessions/test-in-progress-no-agent-repeat"
+elif scenario == "in_progress_no_agent_repeat_grace_period":
+    session_name = "sessions/test-in-progress-no-agent-repeat-grace"
 elif scenario == "in_progress_repeat":
     session_name = "sessions/test-in-progress-repeat"
+elif scenario == "in_progress_repeat_grace_period":
+    session_name = "sessions/test-in-progress-repeat-grace"
 elif scenario == "stopped_in_progress":
     session_name = "sessions/test-stopped-in-progress"
+elif scenario == "repeat_feedback_grace_period":
+    session_name = "sessions/test-repeat-feedback-grace"
 else:
     session_name = "sessions/test-repeat-feedback"
 task_id = os.environ.get("FAKE_TASK_ID", "proxy-runtime-final-answer-mode-stability")
@@ -260,6 +266,21 @@ elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "
                 "originator": "USER",
                 "createTime": iso(now - 4500),
                 "message": {"text": "AUTONOMOUS_CONTINUE_TOKEN\nRecover stalled no-agent work again."},
+            },
+        ]
+    }
+elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "in_progress_no_agent_repeat_grace_period":
+    payload = {
+        "activities": [
+            {
+                "originator": "USER",
+                "createTime": iso(now - 4900),
+                "message": {"text": "AUTONOMOUS_CONTINUE_TOKEN\nRecover stalled no-agent work."},
+            },
+            {
+                "originator": "USER",
+                "createTime": iso(now - 120),
+                "message": {"text": "AUTONOMOUS_CONTINUE_TOKEN\nRecover stalled no-agent work again in grace period."},
             },
         ]
     }
