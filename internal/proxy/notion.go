@@ -1636,8 +1636,11 @@ func setNotionHeaders(req *http.Request, acc *Account) {
 	req.Header.Set("Sec-Fetch-Site", "same-origin")
 
 	// Notion-specific headers
+	req.Header.Del("x-notion-active-user-header")
 	req.Header.Set("x-notion-active-user-header", acc.UserID)
+	req.Header.Del("x-notion-space-id")
 	req.Header.Set("x-notion-space-id", acc.SpaceID)
+	req.Header.Del("notion-client-version")
 	req.Header.Set("notion-client-version", acc.ClientVersion)
 	req.Header.Set("notion-audit-log-platform", "web")
 
@@ -1703,8 +1706,11 @@ func setNotionHeadersJSON(req *http.Request, acc *Account) {
 	req.Header.Set("Sec-Fetch-Dest", "empty")
 	req.Header.Set("Sec-Fetch-Mode", "cors")
 	req.Header.Set("Sec-Fetch-Site", "same-origin")
+	req.Header.Del("x-notion-active-user-header")
 	req.Header.Set("x-notion-active-user-header", acc.UserID)
+	req.Header.Del("x-notion-space-id")
 	req.Header.Set("x-notion-space-id", acc.SpaceID)
+	req.Header.Del("notion-client-version")
 	req.Header.Set("notion-client-version", acc.ClientVersion)
 	req.Header.Set("User-Agent", AppConfig.Browser.UserAgent)
 	req.Header.Set("Origin", "https://www.notion.so")

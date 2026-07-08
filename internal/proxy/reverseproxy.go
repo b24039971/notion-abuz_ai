@@ -320,7 +320,7 @@ func (rp *ReverseProxy) proxyAPI(w http.ResponseWriter, r *http.Request, sess *P
 	// Copy request headers, replacing sensitive ones
 	for k, vals := range r.Header {
 		lk := strings.ToLower(k)
-		if lk == "host" || lk == "cookie" || lk == "origin" || lk == "referer" {
+		if lk == "host" || lk == "cookie" || lk == "origin" || lk == "referer" || lk == "x-notion-active-user-header" || lk == "x-notion-space-id" || lk == "notion-client-version" {
 			continue
 		}
 		for _, v := range vals {
@@ -330,6 +330,9 @@ func (rp *ReverseProxy) proxyAPI(w http.ResponseWriter, r *http.Request, sess *P
 
 	acc := sess.Account
 	req.Header.Set("Cookie", acc.FullCookie)
+	req.Header.Del("x-notion-active-user-header")
+	req.Header.Del("x-notion-space-id")
+	req.Header.Del("notion-client-version")
 	req.Header.Set("x-notion-active-user-header", acc.UserID)
 	req.Header.Set("x-notion-space-id", acc.SpaceID)
 	if acc.ClientVersion != "" {
@@ -364,7 +367,7 @@ func (rp *ReverseProxy) proxyGeneric(w http.ResponseWriter, r *http.Request, ses
 
 	for k, vals := range r.Header {
 		lk := strings.ToLower(k)
-		if lk == "host" || lk == "cookie" {
+		if lk == "host" || lk == "cookie" || lk == "x-notion-active-user-header" || lk == "x-notion-space-id" || lk == "notion-client-version" {
 			continue
 		}
 		for _, v := range vals {
@@ -401,7 +404,7 @@ func (rp *ReverseProxy) proxyWithCookies(w http.ResponseWriter, r *http.Request,
 
 	for k, vals := range r.Header {
 		lk := strings.ToLower(k)
-		if lk == "host" || lk == "cookie" || lk == "origin" || lk == "referer" {
+		if lk == "host" || lk == "cookie" || lk == "origin" || lk == "referer" || lk == "x-notion-active-user-header" || lk == "x-notion-space-id" || lk == "notion-client-version" {
 			continue
 		}
 		for _, v := range vals {
@@ -534,7 +537,7 @@ func (rp *ReverseProxy) proxyWebSocket(w http.ResponseWriter, r *http.Request, s
 	buf.WriteString(fmt.Sprintf("Host: %s\r\n", targetHost))
 	for k, vals := range r.Header {
 		lk := strings.ToLower(k)
-		if lk == "host" || lk == "cookie" || lk == "origin" || lk == "referer" {
+		if lk == "host" || lk == "cookie" || lk == "origin" || lk == "referer" || lk == "x-notion-active-user-header" || lk == "x-notion-space-id" || lk == "notion-client-version" {
 			continue
 		}
 		for _, v := range vals {
@@ -604,7 +607,7 @@ func (rp *ReverseProxy) proxyMsgstoreHTTP(w http.ResponseWriter, r *http.Request
 
 	for k, vals := range r.Header {
 		lk := strings.ToLower(k)
-		if lk == "host" || lk == "cookie" || lk == "origin" || lk == "referer" {
+		if lk == "host" || lk == "cookie" || lk == "origin" || lk == "referer" || lk == "x-notion-active-user-header" || lk == "x-notion-space-id" || lk == "notion-client-version" {
 			continue
 		}
 		for _, v := range vals {
