@@ -6752,7 +6752,7 @@
     },
     {
       "id": "add-session-recovery-grace-period-2",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Add a grace period before terminating stale Jules sessions",
@@ -7044,6 +7044,21 @@
       "acceptance": [
         "A test case covers invalid JSON loading.",
         "A test case covers missing file scenarios."
+      ]
+    },
+    {
+      "id": "proxy-grace-period-logging",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add structured logging for termination grace period decisions",
+      "description": "To improve observability around session deletions, add structured log output to jules-unattended-monitor.sh whenever a grace period actively blocks termination.",
+      "allowed_paths": [
+        ".github/scripts/jules-unattended-monitor.sh",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A structured log format is emitted when a session avoids termination due to grace period."
       ]
     }
   ]

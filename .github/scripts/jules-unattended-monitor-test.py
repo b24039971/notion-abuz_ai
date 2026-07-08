@@ -306,6 +306,50 @@ elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "
             },
         ]
     }
+elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "in_progress_repeat_grace_period":
+    payload = {
+        "activities": [
+            {
+                "originator": "AGENT",
+                "createTime": iso(now - 5000),
+                "message": {
+                    "text": f"selected task id: {task_id}\nStill working."
+                },
+            },
+            {
+                "originator": "USER",
+                "createTime": iso(now - 4900),
+                "message": {"text": "AUTONOMOUS_CONTINUE_TOKEN\nRecover stalled work."},
+            },
+            {
+                "originator": "USER",
+                "createTime": iso(now - 120),
+                "message": {"text": "AUTONOMOUS_CONTINUE_TOKEN\nRecover stalled work again in grace period."},
+            },
+        ]
+    }
+elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "repeat_feedback_grace_period":
+    payload = {
+        "activities": [
+            {
+                "originator": "AGENT",
+                "createTime": iso(now - 500),
+                "message": {
+                    "text": f"selected task id: {task_id}\nI need input before continuing."
+                },
+            },
+            {
+                "originator": "USER",
+                "createTime": iso(now - 490),
+                "message": {"text": "AUTONOMOUS_CONTINUE_TOKEN\nContinue."},
+            },
+            {
+                "originator": "USER",
+                "createTime": iso(now - 120),
+                "message": {"text": "AUTONOMOUS_CONTINUE_TOKEN\nContinue again in grace period."},
+            },
+        ]
+    }
 elif method == "GET" and f"/{session_name}/activities?" in url:
     payload = {
         "activities": [
@@ -929,6 +973,75 @@ class JulesUnattendedMonitorTest(unittest.TestCase):
             self.assertEqual(outputs["failed_recovery_action"], "block")
             self.assertEqual(outputs["failed_task_id"], TASK_ID)
             self.assertEqual(outputs["failed_session_id"], "test-in-progress-repeat")
+
+
+    def test_repeated_autonomous_continue_limit_waits_for_grace_period(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            result, output_path, send_body = self.run_monitor(tmp_path, scenario="repeat_feedback_grace_period")
+            curl_log = tmp_path / "curl.log"
+
+            self.assertEqual(
+                result.returncode,
+                0,
+                msg=f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}",
+            )
+            self.assertIn("Skipped deletion of sessions/test-repeat-feedback-grace; session is in its 5 minute termination grace period (120s old).", result.stdout)
+            self.assertNotIn("Autonomous continue limit reached", result.stdout)
+            if curl_log.exists():
+                self.assertNotIn("DELETE", curl_log.read_text(encoding="utf-8"))
+            self.assertFalse(send_body.exists())
+
+            outputs = dict(
+                line.split("=", 1)
+                for line in output_path.read_text(encoding="utf-8").splitlines()
+                if "=" in line
+            )
+            self.assertEqual(outputs["active_sessions"], "1")
+            self.assertEqual(outputs["touched_sessions"], "0")
+            self.assertEqual(outputs.get("stale_waiting_count", "0"), "0")
+
+    def test_repeated_no_agent_in_progress_limit_waits_for_grace_period(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            result, output_path, send_body = self.run_monitor(
+                tmp_path,
+                scenario="in_progress_no_agent_repeat_grace_period",
+            )
+            curl_log = tmp_path / "curl.log"
+
+            self.assertEqual(
+                result.returncode,
+                0,
+                msg=f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}",
+            )
+            self.assertIn("Skipped deletion of sessions/test-in-progress-no-agent-repeat-grace; session is in its 5 minute termination grace period (120s old).", result.stdout)
+            if curl_log.exists():
+                self.assertNotIn("DELETE", curl_log.read_text(encoding="utf-8"))
+
+            outputs = dict(
+                line.split("=", 1)
+                for line in output_path.read_text(encoding="utf-8").splitlines()
+                if "=" in line
+            )
+            self.assertEqual(outputs["active_sessions"], "1")
+            self.assertEqual(outputs["touched_sessions"], "0")
+
+    def test_repeated_stale_in_progress_limit_waits_for_grace_period(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            result, output_path, send_body = self.run_monitor(tmp_path, scenario="in_progress_repeat_grace_period")
+            curl_log = tmp_path / "curl.log"
+
+            self.assertEqual(
+                result.returncode,
+                0,
+                msg=f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}",
+            )
+            self.assertIn("Skipped deletion of sessions/test-in-progress-repeat-grace; session is in its 5 minute termination grace period (120s old).", result.stdout)
+            if curl_log.exists():
+                self.assertNotIn("DELETE", curl_log.read_text(encoding="utf-8"))
+            self.assertFalse(send_body.exists())
 
 
 if __name__ == "__main__":
