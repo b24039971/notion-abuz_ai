@@ -3,6 +3,7 @@ package proxy
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -15,11 +16,19 @@ var (
 	contextLossMetrics   = make(map[string]int)
 )
 
-func recordContextLossMetric(reason string) {
+func recordContextLossMetric(reason string, contextDetails ...map[string]interface{}) {
 	contextLossMetricsMu.Lock()
 	contextLossMetrics[reason]++
 	count := contextLossMetrics[reason]
 	contextLossMetricsMu.Unlock()
+
+	if len(contextDetails) > 0 && len(contextDetails[0]) > 0 {
+		b, err := json.Marshal(contextDetails[0])
+		if err == nil {
+			log.Printf("[metrics] context_loss: %s (total: %d) context: %s", reason, count, string(b))
+			return
+		}
+	}
 	log.Printf("[metrics] context_loss: %s (total: %d)", reason, count)
 }
 
@@ -636,7 +645,7 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 
 		if hasTransientFailure {
 			log.Printf("[bridge] diagnostic: transient guard applied to multi-turn session continuation")
-			recordContextLossMetric("transient_guard_applied")
+			recordContextLossMetric("transient_guard_applied", map[string]interface{}{"has_transient_failure": true})
 			prompt.WriteString(transientGuardLine)
 		}
 		prompt.WriteString("\n\nContinue from the partial progress above and provide the next step or final answer.")
