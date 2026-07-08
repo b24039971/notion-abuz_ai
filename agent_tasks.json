@@ -7224,7 +7224,7 @@
     },
     {
       "id": "audit-check-quota-timeout",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Audit CheckQuota timeout",
@@ -7235,6 +7235,22 @@
       ],
       "acceptance": [
         "CheckQuota uses client with configured timeout."
+      ],
+      "blocked_reason": "The task asks to explicitly use a client with configured timeout in CheckQuota, but `client := getChromeHTTPClient(AppConfig.APITimeoutDuration())` is already correctly used, so the acceptance criterion is met without any runtime change needed."
+    },
+    {
+      "id": "audit-auth-cookie-formatting",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit auth cookie formatting",
+      "description": "Ensure the authentication cookie is correctly formatted in all Notion proxy requests.",
+      "allowed_paths": [
+        "internal/proxy/notion.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Authentication cookie formatting logic is consistent."
       ]
     }
   ]
