@@ -2119,6 +2119,14 @@ func handleAnthropicStream(w http.ResponseWriter, acc *Account, messages []ChatM
 			searchUsage, searchErr := streamWebSearch(w, flusher, acc, webSearchQuery, model, requestID, &blockIndex, hasThinking)
 			if searchErr != nil {
 				log.Printf("[bridge] WebSearch streaming failed: %v", searchErr)
+				sendAnthropicSSE(w, flusher, "error", map[string]interface{}{
+					"type": "error",
+					"error": map[string]interface{}{
+						"type":    "api_error",
+						"message": "notion WebSearch API error: " + searchErr.Error(),
+					},
+				})
+				return nil
 			}
 			if searchUsage != nil && finalUsage != nil {
 				finalUsage.PromptTokens += searchUsage.PromptTokens

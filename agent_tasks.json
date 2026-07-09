@@ -7382,7 +7382,7 @@
     },
     {
       "id": "audit-proxy-api-error-consistency-follow-up",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Audit Proxy API Error Consistency (Follow Up)",
@@ -7393,6 +7393,21 @@
       ],
       "acceptance": [
         "Streaming errors are verified."
+      ]
+    },
+    {
+      "id": "audit-proxy-api-error-logging-consistency",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit Proxy API Error Logging Consistency",
+      "description": "Ensure that writeAnthropicError consistently logs the error type in addition to the message.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Error logging is audited."
       ]
     }
   ]
