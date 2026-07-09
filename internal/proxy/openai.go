@@ -1951,6 +1951,8 @@ func mapAnthropicStopReasonToOpenAI(stopReason string) string {
 		return "tool_calls"
 	case "max_tokens":
 		return "length"
+	case "end_turn", "stop_sequence":
+		return "stop"
 	default:
 		return "stop"
 	}

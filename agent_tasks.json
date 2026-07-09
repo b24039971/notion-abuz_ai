@@ -7443,7 +7443,7 @@
     },
     {
       "id": "audit-anthropic-response-mapping-coverage",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Audit Anthropic to OpenAI Response Mapping Coverage",
@@ -7455,6 +7455,22 @@
       "acceptance": [
         "Mapping functions for Anthropic to OpenAI responses have been reviewed.",
         "Any identified mapping gaps are addressed or logged as separate tasks."
+      ]
+    },
+    {
+      "id": "audit-anthropic-reasoning-coverage",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit Anthropic Reasoning Content Mapping in OpenAI Response",
+      "description": "The current conversion logic in openai.go discards Anthropic thinking blocks when building OpenAI non-streaming responses (e.g., extractAnthropicTextAndToolCalls). Update the logic to parse these thinking blocks and surface them appropriately (e.g., mapping to OpenAI reasoning_content or prepending them to the content block).",
+      "allowed_paths": [
+        "internal/proxy/openai.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Anthropic reasoning (thinking) blocks are successfully preserved during mapping to OpenAI format.",
+        "Tests verify that reasoning output is mapped properly in OpenAI chat completion responses."
       ]
     }
   ]
