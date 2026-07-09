@@ -7336,7 +7336,7 @@
     },
     {
       "id": "proxy-audit-sse-headers-admin",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Audit Admin Registration SSE Headers",
@@ -7347,6 +7347,21 @@
       ],
       "acceptance": [
         "Admin registration SSE headers are reviewed and normalized."
+      ]
+    },
+    {
+      "id": "audit-proxy-anthropic-sse-error-handling",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit Anthropic SSE Error Handling",
+      "description": "Audit Anthropic proxy to ensure correct error reporting for SSE streams when an upstream error occurs before any tokens are returned.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Anthropic SSE proxy passes proper upstream errors back without silently closing the connection."
       ]
     }
   ]
