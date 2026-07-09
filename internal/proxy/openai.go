@@ -1236,12 +1236,16 @@ func extractAnthropicTextAndToolCalls(blocks []AnthropicContentBlock) (string, s
 		case "thinking":
 			reasoning.WriteString(block.Thinking)
 		case "tool_use":
+			args := string(block.Input)
+			if args == "" || args == "null" {
+				args = "{}"
+			}
 			toolCalls = append(toolCalls, OpenAIChatToolCall{
 				ID:   block.ID,
 				Type: "function",
 				Function: OpenAIChatToolCallFunction{
 					Name:      block.Name,
-					Arguments: string(block.Input),
+					Arguments: args,
 				},
 			})
 		}

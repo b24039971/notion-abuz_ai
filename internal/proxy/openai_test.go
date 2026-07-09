@@ -1033,6 +1033,51 @@ func TestOpenAIChatStreamTranscoder_ToolCallChunks(t *testing.T) {
 	}
 }
 
+func TestExtractAnthropicTextAndToolCalls_EmptyOrNullArguments(t *testing.T) {
+	blocks := []AnthropicContentBlock{
+		{
+			Type:  "tool_use",
+			ID:    "call_1",
+			Name:  "get_weather",
+			Input: json.RawMessage(`{"location": "Boston"}`),
+		},
+		{
+			Type:  "tool_use",
+			ID:    "call_2",
+			Name:  "get_time",
+			Input: json.RawMessage(`null`),
+		},
+		{
+			Type:  "tool_use",
+			ID:    "call_3",
+			Name:  "get_date",
+			Input: nil, // simulating missing/empty
+		},
+	}
+
+	text, reasoning, toolCalls := extractAnthropicTextAndToolCalls(blocks)
+
+	if text != "" {
+		t.Errorf("expected empty text, got %q", text)
+	}
+	if reasoning != "" {
+		t.Errorf("expected empty reasoning, got %q", reasoning)
+	}
+	if len(toolCalls) != 3 {
+		t.Fatalf("expected 3 tool calls, got %d", len(toolCalls))
+	}
+
+	if toolCalls[0].Function.Arguments != `{"location": "Boston"}` {
+		t.Errorf("expected `{\"location\": \"Boston\"}`, got %q", toolCalls[0].Function.Arguments)
+	}
+	if toolCalls[1].Function.Arguments != "{}" {
+		t.Errorf("expected `{}`, got %q", toolCalls[1].Function.Arguments)
+	}
+	if toolCalls[2].Function.Arguments != "{}" {
+		t.Errorf("expected `{}`, got %q", toolCalls[2].Function.Arguments)
+	}
+}
+
 func TestOpenAIChatStreamTranscoder_JSONToolCallLoss(t *testing.T) {
 	rr := httptest.NewRecorder()
 	transcoder := newOpenAIChatStreamTranscoder(rr, rr, "chatcmpl_test", "gpt-5.4", 123, true)
