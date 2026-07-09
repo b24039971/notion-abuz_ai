@@ -1141,10 +1141,13 @@ func sendOpenAISSEEvent(w http.ResponseWriter, flusher http.Flusher, eventType s
 }
 
 func buildOpenAIChatCompletionResponse(responseID string, created int64, model string, anthResp *AnthropicResponse) OpenAIChatCompletionResponse {
-	text, toolCalls := extractAnthropicTextAndToolCalls(anthResp.Content)
+	text, reasoning, toolCalls := extractAnthropicTextAndToolCalls(anthResp.Content)
 	finishReason := mapAnthropicStopReasonToOpenAI(stringValueOrDefault(anthResp.StopReason, "end_turn"))
 	message := map[string]interface{}{
 		"role": "assistant",
+	}
+	if reasoning != "" {
+		message["reasoning_content"] = reasoning
 	}
 	if len(toolCalls) > 0 {
 		message["tool_calls"] = toolCalls
@@ -1176,7 +1179,10 @@ func buildOpenAIChatCompletionResponse(responseID string, created int64, model s
 }
 
 func buildOpenAIResponsesResponse(responseID string, created int64, model string, anthResp *AnthropicResponse) map[string]interface{} {
-	text, toolCalls := extractAnthropicTextAndToolCalls(anthResp.Content)
+	text, reasoning, toolCalls := extractAnthropicTextAndToolCalls(anthResp.Content)
+	if reasoning != "" {
+		text = "<thinking>\n" + reasoning + "\n</thinking>\n\n" + text
+	}
 	output := make([]map[string]interface{}, 0, 1+len(toolCalls))
 	if text != "" || len(toolCalls) == 0 {
 		output = append(output, map[string]interface{}{
@@ -1219,13 +1225,16 @@ func buildOpenAIResponsesResponse(responseID string, created int64, model string
 	return resp
 }
 
-func extractAnthropicTextAndToolCalls(blocks []AnthropicContentBlock) (string, []OpenAIChatToolCall) {
+func extractAnthropicTextAndToolCalls(blocks []AnthropicContentBlock) (string, string, []OpenAIChatToolCall) {
 	var text strings.Builder
+	var reasoning strings.Builder
 	var toolCalls []OpenAIChatToolCall
 	for _, block := range blocks {
 		switch block.Type {
 		case "text":
 			text.WriteString(block.Text)
+		case "thinking":
+			reasoning.WriteString(block.Thinking)
 		case "tool_use":
 			toolCalls = append(toolCalls, OpenAIChatToolCall{
 				ID:   block.ID,
@@ -1237,7 +1246,7 @@ func extractAnthropicTextAndToolCalls(blocks []AnthropicContentBlock) (string, [
 			})
 		}
 	}
-	return text.String(), toolCalls
+	return text.String(), reasoning.String(), toolCalls
 }
 
 func convertOpenAIChatCompletionRequest(req *OpenAIChatCompletionRequest) (*AnthropicRequest, error) {

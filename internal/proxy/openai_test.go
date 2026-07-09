@@ -227,6 +227,7 @@ func TestBuildOpenAIChatCompletionResponse_FromAnthropicBlocks(t *testing.T) {
 	stopReason := "tool_use"
 	resp := buildOpenAIChatCompletionResponse("chatcmpl_test", 123, "gpt-5.4", &AnthropicResponse{
 		Content: []AnthropicContentBlock{
+			{Type: "thinking", Thinking: "First, I should read the file."},
 			{Type: "text", Text: "先读文件"},
 			{Type: "tool_use", ID: "call_1", Name: "Read", Input: json.RawMessage(`{"path":"README.md"}`)},
 		},
@@ -236,6 +237,9 @@ func TestBuildOpenAIChatCompletionResponse_FromAnthropicBlocks(t *testing.T) {
 
 	if got := resp.Choices[0].Message["content"]; got != "先读文件" {
 		t.Fatalf("content = %#v", got)
+	}
+	if gotReasoning := resp.Choices[0].Message["reasoning_content"]; gotReasoning != "First, I should read the file." {
+		t.Fatalf("reasoning_content = %#v", gotReasoning)
 	}
 	toolCalls, ok := resp.Choices[0].Message["tool_calls"].([]OpenAIChatToolCall)
 	if !ok || len(toolCalls) != 1 {
