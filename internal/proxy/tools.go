@@ -1798,11 +1798,14 @@ func parseToolCalls(content string, toolChoiceMode ...string) ([]ToolCall, strin
 		recordToolModeLossMetric("unparseable_json_candidate_blocks" + mode)
 
 		excerpt := largestCandidate
-		if runes := []rune(largestCandidate); len(runes) > 800 {
+		runes := []rune(largestCandidate)
+		truncationMsg := ""
+		if len(runes) > 800 {
 			excerpt = string(runes[:800]) + "... (truncated)"
+			truncationMsg = fmt.Sprintf(" (original len=%d runes, truncated to 800)", len(runes))
 			recordToolModeLossMetric("unparseable_json_candidate_truncated" + mode)
 		}
-		log.Printf("[bridge] diagnostics: fallback extraction found JSON candidates but yielded 0 valid tool calls (unparseable). candidate excerpt: %s", excerpt)
+		log.Printf("[bridge] diagnostics: fallback extraction found JSON candidates but yielded 0 valid tool calls (unparseable). candidate excerpt%s: %s", truncationMsg, excerpt)
 	}
 
 	return nil, content, false

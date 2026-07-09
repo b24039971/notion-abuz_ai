@@ -2450,6 +2450,15 @@ func TestParseToolCallsUnparseableMetricTruncated(t *testing.T) {
 	toolModeLossMetrics = make(map[string]int)
 	toolModeLossMetricsMu.Unlock()
 
+	var logBuf bytes.Buffer
+	originalOut := globalLogWriter.out
+	globalLogWriter.out = &logBuf
+	log.SetOutput(&logBuf)
+	defer func() {
+		globalLogWriter.out = originalOut
+		log.SetOutput(originalOut)
+	}()
+
 	// Parse unparseable block that is longer than 800 chars
 	// The outer array should have over 800 characters to trigger truncation.
 	longStr := strings.Repeat("a", 900)
@@ -2463,6 +2472,11 @@ func TestParseToolCallsUnparseableMetricTruncated(t *testing.T) {
 	_, _, ok := parseToolCalls(content)
 	if ok {
 		t.Fatalf("Expected parseToolCalls to fail on unparseable block")
+	}
+
+	output := logBuf.String()
+	if !strings.Contains(output, "original len=") || !strings.Contains(output, "truncated to 800") {
+		t.Errorf("Expected fallback extraction log to contain truncation size info. Got output: %s", output)
 	}
 
 	toolModeLossMetricsMu.Lock()

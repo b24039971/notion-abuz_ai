@@ -7550,7 +7550,7 @@
     },
     {
       "id": "automation-health-audit-unparseable-json-truncation-handling",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Audit proxy missing robust parsing unparseable candidate logs length",
@@ -7561,6 +7561,22 @@
       ],
       "acceptance": [
         "The excerpt length is strictly limited during truncation in robust json fallback errors."
+      ]
+    },
+    {
+      "id": "audit-proxy-context-loss-metric-consistency",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit proxy context loss metric consistency",
+      "description": "Ensure context loss metrics are consistently tracked and recorded across different fallback/truncation points in the proxy logic.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Context loss metrics log uniformly with identical tracking methods across tools and sessions fallback locations."
       ]
     }
   ]
