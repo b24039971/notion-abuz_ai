@@ -6248,7 +6248,7 @@
       "area": "automation",
       "risk": "low",
       "status": "done",
-      "description": "Autonomous recovery circuit breaker stopped PR #313 at SHA `6eeae54c2bc37cf9b02191abf4c21b9abc319331` for `proxy-session-recovery-system-instruction-metrics`. Diagnose why repeated quality-fix prompts did not converge. Sanitized reason: \u0418\u0441\u0442\u043e\u0440\u0438\u044f \u043f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0445 failed SHA/reasons:\n- `6eeae54c2bc37cf9b02191abf4c21b9abc319331`: AUTONOMOUS_TASK_EVIDENCE references files not changed by this PR: internal/proxy/session_test.go\n- `78dda074ffca65145a58dba3a5820ee5ad0f6ea0`: AUTONOMOUS_TASK_EVIDENCE references files not changed by this PR: internal/proxy/session_test.go\n- `17b7802a6f718fe9d6085b8dafb2624e0bd51b0d`: AUTONOMOUS_TASK_EVIDENCE references files not changed by this PR: internal/proxy/session_test.go\n- `43423fe05ea8968fc11d058f27142f",
+      "description": "Autonomous recovery circuit breaker stopped PR #313 at SHA `6eeae54c2bc37cf9b02191abf4c21b9abc319331` for `proxy-session-recovery-system-instruction-metrics`. Diagnose why repeated quality-fix prompts did not converge. Sanitized reason: История последних failed SHA/reasons:\n- `6eeae54c2bc37cf9b02191abf4c21b9abc319331`: AUTONOMOUS_TASK_EVIDENCE references files not changed by this PR: internal/proxy/session_test.go\n- `78dda074ffca65145a58dba3a5820ee5ad0f6ea0`: AUTONOMOUS_TASK_EVIDENCE references files not changed by this PR: internal/proxy/session_test.go\n- `17b7802a6f718fe9d6085b8dafb2624e0bd51b0d`: AUTONOMOUS_TASK_EVIDENCE references files not changed by this PR: internal/proxy/session_test.go\n- `43423fe05ea8968fc11d058f27142f",
       "allowed_paths": [
         ".github/scripts/jules-recovery-router.py",
         ".github/scripts/review-autonomous-pr-quality.py",
@@ -6275,7 +6275,7 @@
       "area": "automation",
       "risk": "low",
       "status": "done",
-      "description": "Autonomous recovery circuit breaker stopped PR #351 at SHA `98f4cbc7831448fad6528d4da56bcd30953e4da7` for `proxy-session-recovery-system-instruction-truncation-test`. Diagnose why repeated quality-fix prompts did not converge. Sanitized reason: \u0418\u0441\u0442\u043e\u0440\u0438\u044f \u043f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0445 failed SHA/reasons:\n- `493f5e32c4c65f6d4beb5617ba267b4bc86f169f`: AUTONOMOUS_TASK_EVIDENCE task_id proxy-session-recovery-system-instruction-truncation-test does not match changed task proxy-session-recovery-system-instruction-truncation-telemetry.; AUTONOMOUS_TASK_EVIDENCE maps 1 acceptance items, but task proxy-session-recovery-system-instruction-truncation-telemetry has 2 acceptance criteria.\n- `c77a786a5f101a14ac64c2259c162e01afcdea08`: AUTONOMOUS_TASK_EVIDENCE task_id prox",
+      "description": "Autonomous recovery circuit breaker stopped PR #351 at SHA `98f4cbc7831448fad6528d4da56bcd30953e4da7` for `proxy-session-recovery-system-instruction-truncation-test`. Diagnose why repeated quality-fix prompts did not converge. Sanitized reason: История последних failed SHA/reasons:\n- `493f5e32c4c65f6d4beb5617ba267b4bc86f169f`: AUTONOMOUS_TASK_EVIDENCE task_id proxy-session-recovery-system-instruction-truncation-test does not match changed task proxy-session-recovery-system-instruction-truncation-telemetry.; AUTONOMOUS_TASK_EVIDENCE maps 1 acceptance items, but task proxy-session-recovery-system-instruction-truncation-telemetry has 2 acceptance criteria.\n- `c77a786a5f101a14ac64c2259c162e01afcdea08`: AUTONOMOUS_TASK_EVIDENCE task_id prox",
       "allowed_paths": [
         ".github/scripts/jules-recovery-router.py",
         ".github/scripts/review-autonomous-pr-quality.py",
@@ -6306,7 +6306,7 @@
       "area": "automation",
       "risk": "low",
       "status": "blocked",
-      "description": "Autonomous recovery circuit breaker stopped PR #362 at SHA `8f678dcb9d687fd5cea728943e0739e28377c2b9` for `automation-health-quality-failures-spike-6e14b562`. Diagnose why repeated quality-fix prompts did not converge. Sanitized reason: \u0418\u0441\u0442\u043e\u0440\u0438\u044f \u043f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0445 failed SHA/reasons:\n- `6fc4ecf60efa97f5a0054694ff25668243ac48e3`: PR body repeatedly mentions follow-up tasks. Complete the current task fully without leaving follow-up work, or avoid using the word 'follow-up' if it is a false positive.\n- `eb332ec814fe36dfce3b2032f9fa1091d30f1843`: PR body repeatedly mentions follow-up tasks. Complete the current task fully without leaving follow-up work, or avoid using the word 'follow-up' if it is a false positive.\n- `3ab860ab9b9f9d53d25a4f4",
+      "description": "Autonomous recovery circuit breaker stopped PR #362 at SHA `8f678dcb9d687fd5cea728943e0739e28377c2b9` for `automation-health-quality-failures-spike-6e14b562`. Diagnose why repeated quality-fix prompts did not converge. Sanitized reason: История последних failed SHA/reasons:\n- `6fc4ecf60efa97f5a0054694ff25668243ac48e3`: PR body repeatedly mentions follow-up tasks. Complete the current task fully without leaving follow-up work, or avoid using the word 'follow-up' if it is a false positive.\n- `eb332ec814fe36dfce3b2032f9fa1091d30f1843`: PR body repeatedly mentions follow-up tasks. Complete the current task fully without leaving follow-up work, or avoid using the word 'follow-up' if it is a false positive.\n- `3ab860ab9b9f9d53d25a4f4",
       "allowed_paths": [
         ".github/scripts/jules-recovery-router.py",
         ".github/scripts/review-autonomous-pr-quality.py",
@@ -7427,7 +7427,7 @@
     },
     {
       "id": "investigate-openai-api-error-logging-context",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Investigate Context for OpenAI API Errors",
@@ -7439,6 +7439,22 @@
       ],
       "acceptance": [
         "Contextual error logging for OpenAI API is investigated and added if appropriate."
+      ]
+    },
+    {
+      "id": "audit-anthropic-response-mapping-coverage",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit Anthropic to OpenAI Response Mapping Coverage",
+      "description": "Review the mapping functions converting Anthropic responses to OpenAI equivalents in openai.go for any missing or incorrectly mapped standard fields.",
+      "allowed_paths": [
+        "internal/proxy/openai.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Mapping functions for Anthropic to OpenAI responses have been reviewed.",
+        "Any identified mapping gaps are addressed or logged as separate tasks."
       ]
     }
   ]

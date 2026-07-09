@@ -822,35 +822,36 @@ func (t *openAIResponsesStreamTranscoder) HandleFrame(frame anthropicSSEFrame) e
 func HandleOpenAIChatCompletions(pool *AccountPool) http.HandlerFunc {
 	anthropicHandler := HandleAnthropicMessages(pool)
 	return func(w http.ResponseWriter, r *http.Request) {
+		respID := "chatcmpl_" + compactUUID()
+
 		if r.Method != http.MethodPost {
-			writeOpenAIError(w, http.StatusMethodNotAllowed, "method not allowed", "invalid_request_error", "")
+			writeOpenAIError(w, respID, http.StatusMethodNotAllowed, "method not allowed", "invalid_request_error", "")
 			return
 		}
 
 		bodyBytes, err := io.ReadAll(r.Body)
 		if err != nil {
-			writeOpenAIError(w, http.StatusBadRequest, "failed to read request body: "+err.Error(), "invalid_request_error", "")
+			writeOpenAIError(w, respID, http.StatusBadRequest, "failed to read request body: "+err.Error(), "invalid_request_error", "")
 			return
 		}
 		if len(bodyBytes) == 0 {
-			writeOpenAIError(w, http.StatusBadRequest, "request body is required", "invalid_request_error", "")
+			writeOpenAIError(w, respID, http.StatusBadRequest, "request body is required", "invalid_request_error", "")
 			return
 		}
-		log.Printf("[openai-chat] incoming /v1/chat/completions request (%d bytes)", len(bodyBytes))
-		LogAPIInputJSONBytes("openai-chat", "incoming /v1/chat/completions request", bodyBytes)
+		log.Printf("[openai-chat] %s: incoming /v1/chat/completions request (%d bytes)", respID, len(bodyBytes))
+		LogAPIInputJSONBytes(respID, "incoming /v1/chat/completions request", bodyBytes)
 
 		var req OpenAIChatCompletionRequest
 		if err := json.Unmarshal(bodyBytes, &req); err != nil {
-			writeOpenAIError(w, http.StatusBadRequest, "invalid request body: "+err.Error(), "invalid_request_error", "")
+			writeOpenAIError(w, respID, http.StatusBadRequest, "invalid request body: "+err.Error(), "invalid_request_error", "")
 			return
 		}
 		anthReq, err := convertOpenAIChatCompletionRequest(&req)
 		if err != nil {
-			writeOpenAIError(w, http.StatusBadRequest, err.Error(), "invalid_request_error", "")
+			writeOpenAIError(w, respID, http.StatusBadRequest, err.Error(), "invalid_request_error", "")
 			return
 		}
 
-		respID := "chatcmpl_" + compactUUID()
 		created := time.Now().Unix()
 		if req.Stream {
 			streamAnthropicAsOpenAIChat(w, r, anthropicHandler, anthReq, respID, created, req.StreamOptions != nil && req.StreamOptions.IncludeUsage)
@@ -859,7 +860,7 @@ func HandleOpenAIChatCompletions(pool *AccountPool) http.HandlerFunc {
 
 		anthResp, invErr := invokeAnthropicNonStream(anthropicHandler, r, anthReq)
 		if invErr != nil {
-			writeOpenAIError(w, invErr.Status, invErr.Message, invErr.Type, "")
+			writeOpenAIError(w, respID, invErr.Status, invErr.Message, invErr.Type, "")
 			return
 		}
 
@@ -873,35 +874,36 @@ func HandleOpenAIChatCompletions(pool *AccountPool) http.HandlerFunc {
 func HandleOpenAIResponses(pool *AccountPool) http.HandlerFunc {
 	anthropicHandler := HandleAnthropicMessages(pool)
 	return func(w http.ResponseWriter, r *http.Request) {
+		respID := "resp_" + compactUUID()
+
 		if r.Method != http.MethodPost {
-			writeOpenAIError(w, http.StatusMethodNotAllowed, "method not allowed", "invalid_request_error", "")
+			writeOpenAIError(w, respID, http.StatusMethodNotAllowed, "method not allowed", "invalid_request_error", "")
 			return
 		}
 
 		bodyBytes, err := io.ReadAll(r.Body)
 		if err != nil {
-			writeOpenAIError(w, http.StatusBadRequest, "failed to read request body: "+err.Error(), "invalid_request_error", "")
+			writeOpenAIError(w, respID, http.StatusBadRequest, "failed to read request body: "+err.Error(), "invalid_request_error", "")
 			return
 		}
 		if len(bodyBytes) == 0 {
-			writeOpenAIError(w, http.StatusBadRequest, "request body is required", "invalid_request_error", "")
+			writeOpenAIError(w, respID, http.StatusBadRequest, "request body is required", "invalid_request_error", "")
 			return
 		}
-		log.Printf("[openai-resp] incoming /v1/responses request (%d bytes)", len(bodyBytes))
-		LogAPIInputJSONBytes("openai-resp", "incoming /v1/responses request", bodyBytes)
+		log.Printf("[openai-resp] %s: incoming /v1/responses request (%d bytes)", respID, len(bodyBytes))
+		LogAPIInputJSONBytes(respID, "incoming /v1/responses request", bodyBytes)
 
 		var req OpenAIResponsesRequest
 		if err := json.Unmarshal(bodyBytes, &req); err != nil {
-			writeOpenAIError(w, http.StatusBadRequest, "invalid request body: "+err.Error(), "invalid_request_error", "")
+			writeOpenAIError(w, respID, http.StatusBadRequest, "invalid request body: "+err.Error(), "invalid_request_error", "")
 			return
 		}
 		anthReq, err := convertOpenAIResponsesRequest(&req)
 		if err != nil {
-			writeOpenAIError(w, http.StatusBadRequest, err.Error(), "invalid_request_error", "")
+			writeOpenAIError(w, respID, http.StatusBadRequest, err.Error(), "invalid_request_error", "")
 			return
 		}
 
-		respID := "resp_" + compactUUID()
 		created := time.Now().Unix()
 		if req.Stream {
 			streamAnthropicAsOpenAIResponses(w, r, anthropicHandler, anthReq, respID, created)
@@ -910,7 +912,7 @@ func HandleOpenAIResponses(pool *AccountPool) http.HandlerFunc {
 
 		anthResp, invErr := invokeAnthropicNonStream(anthropicHandler, r, anthReq)
 		if invErr != nil {
-			writeOpenAIError(w, invErr.Status, invErr.Message, invErr.Type, "")
+			writeOpenAIError(w, respID, invErr.Status, invErr.Message, invErr.Type, "")
 			return
 		}
 
@@ -925,7 +927,7 @@ func streamAnthropicAsOpenAIChat(w http.ResponseWriter, r *http.Request, anthrop
 	bridge := newAnthropicStreamBridgeWriter()
 	innerReq, err := newAnthropicBridgeRequest(r, anthropicReq)
 	if err != nil {
-		writeOpenAIError(w, http.StatusInternalServerError, err.Error(), "api_error", "")
+		writeOpenAIError(w, responseID, http.StatusInternalServerError, err.Error(), "api_error", "")
 		return
 	}
 	go func() {
@@ -935,7 +937,7 @@ func streamAnthropicAsOpenAIChat(w http.ResponseWriter, r *http.Request, anthrop
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
-		writeOpenAIError(w, http.StatusInternalServerError, "streaming not supported", "api_error", "")
+		writeOpenAIError(w, responseID, http.StatusInternalServerError, "streaming not supported", "api_error", "")
 		return
 	}
 	transcoder := newOpenAIChatStreamTranscoder(w, flusher, responseID, anthropicReq.Model, created, includeUsage)
@@ -948,7 +950,7 @@ func streamAnthropicAsOpenAIChat(w http.ResponseWriter, r *http.Request, anthrop
 		}
 		frame, err := parseAnthropicSSEFrame(raw)
 		if err != nil {
-			writeOpenAIError(w, http.StatusBadGateway, "failed to parse Anthropic stream: "+err.Error(), "api_error", "")
+			writeOpenAIError(w, responseID, http.StatusBadGateway, "failed to parse Anthropic stream: "+err.Error(), "api_error", "")
 			return
 		}
 		if !headersSent {
@@ -956,15 +958,15 @@ func streamAnthropicAsOpenAIChat(w http.ResponseWriter, r *http.Request, anthrop
 			headersSent = true
 		}
 		if err := transcoder.HandleFrame(frame); err != nil {
-			writeOpenAIError(w, http.StatusBadGateway, "failed to map Anthropic stream: "+err.Error(), "api_error", "")
+			writeOpenAIError(w, responseID, http.StatusBadGateway, "failed to map Anthropic stream: "+err.Error(), "api_error", "")
 			return
 		}
 	}
 
-	log.Printf("[openai-chat] stream complete: %d frames, bridge status=%d", frameCount, bridge.Status())
+	log.Printf("[openai-chat] %s: stream complete: %d frames, bridge status=%d", responseID, frameCount, bridge.Status())
 	if bridge.Status() != http.StatusOK {
 		invErr := parseAnthropicInvocationError(bridge.Status(), bridge.ErrorBody())
-		writeOpenAIError(w, invErr.Status, invErr.Message, invErr.Type, "")
+		writeOpenAIError(w, responseID, invErr.Status, invErr.Message, invErr.Type, "")
 	}
 }
 
@@ -972,7 +974,7 @@ func streamAnthropicAsOpenAIResponses(w http.ResponseWriter, r *http.Request, an
 	bridge := newAnthropicStreamBridgeWriter()
 	innerReq, err := newAnthropicBridgeRequest(r, anthropicReq)
 	if err != nil {
-		writeOpenAIError(w, http.StatusInternalServerError, err.Error(), "api_error", "")
+		writeOpenAIError(w, responseID, http.StatusInternalServerError, err.Error(), "api_error", "")
 		return
 	}
 	go func() {
@@ -982,7 +984,7 @@ func streamAnthropicAsOpenAIResponses(w http.ResponseWriter, r *http.Request, an
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
-		writeOpenAIError(w, http.StatusInternalServerError, "streaming not supported", "api_error", "")
+		writeOpenAIError(w, responseID, http.StatusInternalServerError, "streaming not supported", "api_error", "")
 		return
 	}
 	transcoder := newOpenAIResponsesStreamTranscoder(w, flusher, responseID, anthropicReq.Model, created)
@@ -991,34 +993,34 @@ func streamAnthropicAsOpenAIResponses(w http.ResponseWriter, r *http.Request, an
 	for raw := range bridge.frames {
 		frameCount++
 		if bridge.Status() != http.StatusOK {
-			log.Printf("[openai-resp] skipping frame %d (bridge status=%d)", frameCount, bridge.Status())
+			log.Printf("[openai-resp] %s: skipping frame %d (bridge status=%d)", responseID, frameCount, bridge.Status())
 			continue
 		}
 		frame, err := parseAnthropicSSEFrame(raw)
 		if err != nil {
-			log.Printf("[openai-resp] frame %d parse error: %v", frameCount, err)
-			writeOpenAIError(w, http.StatusBadGateway, "failed to parse Anthropic stream: "+err.Error(), "api_error", "")
+			log.Printf("[openai-resp] %s: frame %d parse error: %v", responseID, frameCount, err)
+			writeOpenAIError(w, responseID, http.StatusBadGateway, "failed to parse Anthropic stream: "+err.Error(), "api_error", "")
 			return
 		}
 		if DebugLoggingEnabled() {
-			log.Printf("[openai-resp] frame %d: event=%s", frameCount, frame.Event)
+			log.Printf("[openai-resp] %s: frame %d: event=%s", responseID, frameCount, frame.Event)
 		}
 		if !headersSent {
 			SetSSEHeaders(w)
 			headersSent = true
 		}
 		if err := transcoder.HandleFrame(frame); err != nil {
-			log.Printf("[openai-resp] frame %d transcode error: %v", frameCount, err)
-			writeOpenAIError(w, http.StatusBadGateway, "failed to map Anthropic stream: "+err.Error(), "api_error", "")
+			log.Printf("[openai-resp] %s: frame %d transcode error: %v", responseID, frameCount, err)
+			writeOpenAIError(w, responseID, http.StatusBadGateway, "failed to map Anthropic stream: "+err.Error(), "api_error", "")
 			return
 		}
 	}
 
-	log.Printf("[openai-resp] stream complete: %d frames, bridge status=%d, text=%d chars",
-		frameCount, bridge.Status(), transcoder.messageText.Len())
+	log.Printf("[openai-resp] %s: stream complete: %d frames, bridge status=%d, text=%d chars",
+		responseID, frameCount, bridge.Status(), transcoder.messageText.Len())
 	if bridge.Status() != http.StatusOK {
 		invErr := parseAnthropicInvocationError(bridge.Status(), bridge.ErrorBody())
-		writeOpenAIError(w, invErr.Status, invErr.Message, invErr.Type, "")
+		writeOpenAIError(w, responseID, invErr.Status, invErr.Message, invErr.Type, "")
 	}
 }
 
@@ -1925,9 +1927,19 @@ func ensureJSONSchemaObject(schema interface{}) interface{} {
 	return schema
 }
 
-func writeOpenAIError(w http.ResponseWriter, status int, message, errType, param string) {
-	log.Printf("[err] openai api error: %s (type=%s, param=%s, status=%d)", message, errType, param, status)
+func writeOpenAIError(w http.ResponseWriter, requestID string, status int, message, errType, param string) {
+	if requestID != "" {
+		log.Printf("[err] %s: openai api error: %s (type=%s, param=%s, status=%d)", requestID, message, errType, param, status)
+	} else {
+		log.Printf("[err] openai api error: %s (type=%s, param=%s, status=%d)", message, errType, param, status)
+	}
+
 	payload := OpenAIErrorResponse{Error: OpenAIError{Message: message, Type: errType, Param: param}}
+
+	if requestID != "" {
+		LogAPIOutputJSON(requestID, fmt.Sprintf("openai error status=%d type=%s", status, errType), payload)
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(payload)
