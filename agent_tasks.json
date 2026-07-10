@@ -8256,7 +8256,7 @@
     },
     {
       "id": "proxy-audit-cookie-forwarding",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Audit proxy cookie forwarding",

@@ -1,3 +1,11 @@
+// Package proxy provides reverse proxying and session management for Notion accounts.
+//
+// Cookie Forwarding:
+// The reverse proxy handles cookie forwarding by extracting the targeted Notion
+// account's FullCookie from the active proxy session (np_session). It then
+// injects this FullCookie into all upstream requests to Notion. This ensures
+// that client requests are properly authenticated as the assigned pooled account
+// without exposing the raw Notion tokens to the client.
 package proxy
 
 import (
