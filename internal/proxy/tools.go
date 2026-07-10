@@ -789,7 +789,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 			}
 			if userQueryIdx == -1 {
 				recordContextLossMetric("missing_user_message_in_fallback")
-				log.Printf("[err] [bridge] warning: failed to find a meaningful user message during legacy collapse, context extraction may fail")
+				log.Printf("[bridge] [err] warning: failed to find a meaningful user message during legacy collapse, context extraction may fail")
 			}
 			// Collect tool results only from the CURRENT chain (after userQueryIdx).
 			// This prevents cross-query pollution in interactive mode.
@@ -1138,7 +1138,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 // response, etc.). The continuation is sent as a partial transcript via CallInference.
 func buildSessionChainContinuation(messages []ChatMessage, compactList string, cwd string) []ChatMessage {
 	if compactList == "" {
-		log.Printf("[err] [bridge] warning: multi-turn session continuation invoked with empty tool list (compactList is empty)")
+		log.Printf("[bridge] [err] warning: multi-turn session continuation invoked with empty tool list (compactList is empty)")
 		recordContextLossMetric("empty_tools_fallback") // explicitly tracked for observability
 	}
 
@@ -1181,7 +1181,7 @@ func buildSessionChainContinuation(messages []ChatMessage, compactList string, c
 			}
 			roles = append(roles, fmt.Sprintf("%s(len=%d): %q", m.Role, len(m.Content), snippet))
 		}
-		log.Printf("[err] [bridge] diagnostics: multi-turn Haiku fallback mismatch — failed to find anchor assistant message to merge tool results. total messages: %d. roles: [%s]", len(messages), strings.Join(roles, ", "))
+		log.Printf("[bridge] [err] diagnostics: multi-turn Haiku fallback mismatch — failed to find anchor assistant message to merge tool results. total messages: %d. roles: [%s]", len(messages), strings.Join(roles, ", "))
 	} else {
 		lastMsg := messages[lastAssistantIdx]
 		if len(lastMsg.ToolCalls) == 0 && lastMsg.Content != "" {
@@ -1287,7 +1287,7 @@ func buildSessionChainContinuation(messages []ChatMessage, compactList string, c
 		p1, p2, p3, p4 := traceParts[len(traceParts)-4], traceParts[len(traceParts)-3], traceParts[len(traceParts)-2], traceParts[len(traceParts)-1]
 		if strings.HasPrefix(p1, "call[") && strings.HasPrefix(p2, "err[") &&
 			p1 == p3 && p2 == p4 {
-			log.Printf("[err] [bridge] session chain: warning, detected potential retry loop (same tools called repeatedly after errors)")
+			log.Printf("[bridge] [err] session chain: warning, detected potential retry loop (same tools called repeatedly after errors)")
 			recordContextLossMetric("retry_loop_detected")
 		}
 	}

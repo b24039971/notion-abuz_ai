@@ -7887,7 +7887,7 @@
     },
     {
       "id": "proxy-audit-log-prefixes",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Audit log prefixes for proxy diagnostics",
@@ -7899,6 +7899,21 @@
       ],
       "acceptance": [
         "Diagnostic logs in proxy codebase are audited for prefix consistency."
+      ]
+    },
+    {
+      "id": "proxy-audit-missing-tool-fallback",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for empty_tools_fallback metric",
+      "description": "Add a unit test in internal/proxy/tools_test.go to verify that multi-turn session continuation with an empty tool list properly triggers the empty_tools_fallback metric.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A test in tools_test.go explicitly asserts that context_loss metric 'empty_tools_fallback' is recorded when compactList is empty in buildSessionChainContinuation."
       ]
     }
   ]
