@@ -7733,7 +7733,7 @@
     },
     {
       "id": "scripts-audit-python-lint",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Audit python scripts for formatting",
@@ -7915,6 +7915,21 @@
       ],
       "acceptance": [
         "A test in tools_test.go explicitly asserts that context_loss metric 'empty_tools_fallback' is recorded when compactList is empty in buildSessionChainContinuation."
+      ]
+    },
+    {
+      "id": "scripts-audit-python-lint-validate-tasks",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Audit python scripts for formatting: validate_agent_tasks.py",
+      "description": "Review validate_agent_tasks.py for standard formatting using ruff.",
+      "allowed_paths": [
+        "scripts/validate_agent_tasks.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "validate_agent_tasks.py is audited for standard Python formatting using ruff."
       ]
     }
   ]

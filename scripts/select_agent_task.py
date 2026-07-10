@@ -109,7 +109,9 @@ HIGH_RISK_FORBIDDEN_PATH_TOKENS = (
     "prod",
     "production",
 )
-EXCLUDED_TASK_REASON = "task is already represented by a stopped autonomous PR awaiting review"
+EXCLUDED_TASK_REASON = (
+    "task is already represented by a stopped autonomous PR awaiting review"
+)
 
 
 @dataclass(frozen=True)
@@ -215,7 +217,9 @@ def is_narrow_runtime_metric_test(task: dict[str, Any]) -> bool:
     if not paths:
         return False
     has_runtime = any(is_runtime_proxy_path(path) for path in paths)
-    has_test = any(is_low_impact_path(path) and "test" in path.lower() for path in paths)
+    has_test = any(
+        is_low_impact_path(path) and "test" in path.lower() for path in paths
+    )
     if not has_runtime or not has_test:
         return False
 
@@ -235,7 +239,9 @@ def is_placeholder_replenishment_task(task: dict[str, Any]) -> bool:
         return False
 
     paths = [str(path) for path in task.get("allowed_paths", [])]
-    manifest_only = bool(paths) and all(path.replace("\\", "/") == "agent_tasks.json" for path in paths)
+    manifest_only = bool(paths) and all(
+        path.replace("\\", "/") == "agent_tasks.json" for path in paths
+    )
     non_runtime = not any(is_runtime_proxy_path(path) for path in paths)
     return manifest_only or non_runtime
 
@@ -245,12 +251,17 @@ def is_guarded_high_risk_task(task: dict[str, Any]) -> bool:
         return True
 
     text = task_text(task)
-    paths = [str(path).replace("\\", "/").lower() for path in task.get("allowed_paths", [])]
+    paths = [
+        str(path).replace("\\", "/").lower() for path in task.get("allowed_paths", [])
+    ]
     if not paths:
         return False
     if any(path in {"", ".", "*", "/"} or "*" in path for path in paths):
         return False
-    if any(any(token in path for token in HIGH_RISK_FORBIDDEN_PATH_TOKENS) for path in paths):
+    if any(
+        any(token in path for token in HIGH_RISK_FORBIDDEN_PATH_TOKENS)
+        for path in paths
+    ):
         return False
     return any(token in text for token in HIGH_RISK_EVIDENCE_TOKENS)
 
@@ -259,8 +270,12 @@ def score_task(task: dict[str, Any], focus: str) -> tuple[int, str]:
     text = task_text(task)
     paths = [str(path) for path in task.get("allowed_paths", [])]
     has_runtime = any(is_runtime_proxy_path(path) for path in paths)
-    has_tests = any(is_low_impact_path(path) and "test" in path.lower() for path in paths)
-    has_docs = any(str(path).replace("\\", "/").lower().startswith("docs/") for path in paths)
+    has_tests = any(
+        is_low_impact_path(path) and "test" in path.lower() for path in paths
+    )
+    has_docs = any(
+        str(path).replace("\\", "/").lower().startswith("docs/") for path in paths
+    )
     has_live_smoke = "live smoke" in text or "rdsh_local_live_smoke" in text
     has_artifacts = "artifact" in text or "transcript" in text
     evidence = is_evidence_backed(text)
@@ -326,15 +341,25 @@ def select_task(
             if task.get("id") != task_id:
                 continue
             if task_id in excluded:
-                raise ValueError(f"task {task_id!r} is excluded: {EXCLUDED_TASK_REASON}")
+                raise ValueError(
+                    f"task {task_id!r} is excluded: {EXCLUDED_TASK_REASON}"
+                )
             if task.get("status") != "todo":
-                raise ValueError(f"task {task_id!r} has status {task.get('status')!r}, expected 'todo'")
+                raise ValueError(
+                    f"task {task_id!r} has status {task.get('status')!r}, expected 'todo'"
+                )
             if task.get("risk") not in risks:
-                raise ValueError(f"task {task_id!r} risk {task.get('risk')!r} exceeds ceiling {risk_ceiling!r}")
+                raise ValueError(
+                    f"task {task_id!r} risk {task.get('risk')!r} exceeds ceiling {risk_ceiling!r}"
+                )
             if not is_guarded_high_risk_task(task):
-                raise ValueError(f"task {task_id!r} is high risk without required legacy/lab evidence guard")
+                raise ValueError(
+                    f"task {task_id!r} is high risk without required legacy/lab evidence guard"
+                )
             if is_placeholder_replenishment_task(task):
-                raise ValueError(f"task {task_id!r} is a placeholder replenishment task without evidence")
+                raise ValueError(
+                    f"task {task_id!r} is a placeholder replenishment task without evidence"
+                )
             return Selection(
                 selected=True,
                 task_id=str(task.get("id", "")),
@@ -356,13 +381,19 @@ def select_task(
             continue
         current_task_id = str(task.get("id", ""))
         if current_task_id in excluded:
-            rejected.append({"task_id": current_task_id, "reason": EXCLUDED_TASK_REASON})
+            rejected.append(
+                {"task_id": current_task_id, "reason": EXCLUDED_TASK_REASON}
+            )
             continue
         if not is_guarded_high_risk_task(task):
-            rejected.append({"task_id": current_task_id, "reason": HIGH_RISK_BLOCK_REASON})
+            rejected.append(
+                {"task_id": current_task_id, "reason": HIGH_RISK_BLOCK_REASON}
+            )
             continue
         if is_placeholder_replenishment_task(task):
-            rejected.append({"task_id": current_task_id, "reason": PLACEHOLDER_BLOCK_REASON})
+            rejected.append(
+                {"task_id": current_task_id, "reason": PLACEHOLDER_BLOCK_REASON}
+            )
             continue
         if is_micro_test_only(task) or is_narrow_runtime_metric_test(task):
             rejected.append({"task_id": current_task_id, "reason": BLOCK_REASON})
@@ -440,7 +471,9 @@ def main(argv: list[str] | None = None) -> int:
         default=[],
         help="task id to skip because an existing stopped autonomous PR already represents it",
     )
-    parser.add_argument("--json", action="store_true", help="print machine-readable selection JSON")
+    parser.add_argument(
+        "--json", action="store_true", help="print machine-readable selection JSON"
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -450,11 +483,17 @@ def main(argv: list[str] | None = None) -> int:
             risk_ceiling=args.risk_ceiling,
             focus=args.focus,
             task_id=args.task_id.strip() or None,
-            exclude_task_ids={item.strip() for item in args.exclude_task_id if item.strip()},
+            exclude_task_ids={
+                item.strip() for item in args.exclude_task_id if item.strip()
+            },
         )
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         if args.json:
-            print(json.dumps({"selected": False, "error": str(exc)}, ensure_ascii=False, indent=2))
+            print(
+                json.dumps(
+                    {"selected": False, "error": str(exc)}, ensure_ascii=False, indent=2
+                )
+            )
         else:
             print(f"ERROR: {exc}", file=sys.stderr)
         return 2
