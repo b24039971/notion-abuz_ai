@@ -197,11 +197,17 @@ def filter_sessions(
             continue
 
         if state == "IN_PROGRESS":
-            item["reason"] = "stale_recent_task_mapping" if stale_recent_map else "unknown_in_progress_task_id"
+            item["reason"] = (
+                "stale_recent_task_mapping"
+                if stale_recent_map
+                else "unknown_in_progress_task_id"
+            )
             ignored.append(item)
             continue
 
-        item["reason"] = "stale_recent_task_mapping" if stale_recent_map else "unknown_task_id"
+        item["reason"] = (
+            "stale_recent_task_mapping" if stale_recent_map else "unknown_task_id"
+        )
         blocking.append(item)
 
     return {
@@ -218,7 +224,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--sessions", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, default=Path("agent_tasks.json"))
     parser.add_argument("--recent-map", type=Path)
-    parser.add_argument("--recent-map-ttl-minutes", type=int, default=DEFAULT_RECENT_MAP_TTL_MINUTES)
+    parser.add_argument(
+        "--recent-map-ttl-minutes", type=int, default=DEFAULT_RECENT_MAP_TTL_MINUTES
+    )
     parser.add_argument("--source", required=True)
     parser.add_argument("--stopped-task-ids", default="")
     parser.add_argument(
@@ -228,7 +236,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Active Jules state. Defaults to the known active states.",
     )
     parser.add_argument("--json", action="store_true")
-    parser.add_argument("--debug", action="store_true", help="Print debug list of blocking and ignored sessions")
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Print debug list of blocking and ignored sessions",
+    )
     return parser
 
 
@@ -249,10 +261,17 @@ def main(argv: list[str] | None = None) -> int:
     else:
         if args.debug:
             import sys
+
             for item in result.get("blocking_sessions", []):
-                print(f"Blocking session: {item.get('session_name')} (reason: {item.get('reason')})", file=sys.stderr)
+                print(
+                    f"Blocking session: {item.get('session_name')} (reason: {item.get('reason')})",
+                    file=sys.stderr,
+                )
             for item in result.get("ignored_sessions", []):
-                print(f"Ignored session: {item.get('session_name')} (reason: {item.get('reason')})", file=sys.stderr)
+                print(
+                    f"Ignored session: {item.get('session_name')} (reason: {item.get('reason')})",
+                    file=sys.stderr,
+                )
         print(result["blocking_count"])
     return 0
 

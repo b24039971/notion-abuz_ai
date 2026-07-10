@@ -8054,7 +8054,7 @@
     },
     {
       "id": "scripts-audit-python-lint-filter-active",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Audit python scripts for formatting: filter-active-jules-sessions.py",
@@ -8065,6 +8065,36 @@
       ],
       "acceptance": [
         "filter-active-jules-sessions.py is audited for standard Python formatting using ruff."
+      ]
+    },
+    {
+      "id": "scripts-audit-python-lint-advisory-critic",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Audit python scripts for formatting: advisory-critic-review.py",
+      "description": "Review advisory-critic-review.py for standard formatting using ruff.",
+      "allowed_paths": [
+        ".github/scripts/advisory-critic-review.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "advisory-critic-review.py is audited for standard Python formatting using ruff."
+      ]
+    },
+    {
+      "id": "scripts-audit-python-lint-automation-health",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Audit python scripts for formatting: automation-health-report.py",
+      "description": "Review automation-health-report.py for standard formatting using ruff.",
+      "allowed_paths": [
+        ".github/scripts/automation-health-report.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "automation-health-report.py is audited for standard Python formatting using ruff."
       ]
     }
   ]
