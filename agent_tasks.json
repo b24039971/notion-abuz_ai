@@ -8039,7 +8039,7 @@
     },
     {
       "id": "scripts-audit-python-lint-dedupe-task-7",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Audit python scripts for formatting: select_agent_task.py",
@@ -8050,6 +8050,21 @@
       ],
       "acceptance": [
         "select_agent_task.py is audited for standard Python formatting using ruff."
+      ]
+    },
+    {
+      "id": "scripts-audit-python-lint-filter-active",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Audit python scripts for formatting: filter-active-jules-sessions.py",
+      "description": "Review filter-active-jules-sessions.py for standard formatting using ruff.",
+      "allowed_paths": [
+        ".github/scripts/filter-active-jules-sessions.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "filter-active-jules-sessions.py is audited for standard Python formatting using ruff."
       ]
     }
   ]
