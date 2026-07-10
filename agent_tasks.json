@@ -8009,7 +8009,7 @@
     },
     {
       "id": "scripts-audit-python-lint-dedupe-task-5",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Audit python scripts for formatting: rool_cognitive_loop.py",
@@ -8020,6 +8020,21 @@
       ],
       "acceptance": [
         "rool_cognitive_loop.py is audited for standard Python formatting using ruff."
+      ]
+    },
+    {
+      "id": "scripts-audit-python-lint-dedupe-task-6",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Audit python scripts for formatting: select_agent_task_test.py",
+      "description": "Review select_agent_task_test.py for standard formatting using ruff.",
+      "allowed_paths": [
+        "scripts/select_agent_task_test.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "select_agent_task_test.py is audited for standard Python formatting using ruff."
       ]
     }
   ]

@@ -42,7 +42,9 @@ def load_manifest(path: Path) -> dict[str, Any]:
     return data
 
 
-def observe(data: dict[str, Any], task_id: str | None, risk_ceiling: str) -> SelectedTask | None:
+def observe(
+    data: dict[str, Any], task_id: str | None, risk_ceiling: str
+) -> SelectedTask | None:
     """Observe the manifest and select a task."""
     print("--- OBSERVE ---")
     tasks = data.get("tasks")
@@ -50,7 +52,11 @@ def observe(data: dict[str, Any], task_id: str | None, risk_ceiling: str) -> Sel
         raise ValueError("manifest tasks must be an array")
 
     allowed_risks = {"low"} if risk_ceiling == "low" else SAFE_RISKS
-    todos = [task for task in tasks if isinstance(task, dict) and task.get("status") == "todo"]
+    todos = [
+        task
+        for task in tasks
+        if isinstance(task, dict) and task.get("status") == "todo"
+    ]
     print(f"Todo tasks: {len(todos)}")
 
     for task in todos:
@@ -59,7 +65,9 @@ def observe(data: dict[str, Any], task_id: str | None, risk_ceiling: str) -> Sel
         if task_id and current_id != task_id:
             continue
         if risk not in allowed_risks:
-            print(f"Skipping {current_id}: risk {risk!r} exceeds ceiling {risk_ceiling!r}")
+            print(
+                f"Skipping {current_id}: risk {risk!r} exceeds ceiling {risk_ceiling!r}"
+            )
             continue
         return task_from_dict(task)
 
@@ -89,7 +97,11 @@ def orient(task: SelectedTask, repo_root: Path) -> None:
     print(f"Goal: {task.description}")
     print("Allowed paths:")
     for allowed_path in task.allowed_paths:
-        matches = list(repo_root.glob(allowed_path)) if any(ch in allowed_path for ch in "*?[") else []
+        matches = (
+            list(repo_root.glob(allowed_path))
+            if any(ch in allowed_path for ch in "*?[")
+            else []
+        )
         literal = repo_root / allowed_path
         if literal.exists():
             print(f"  EXISTS  {allowed_path}")
@@ -127,7 +139,9 @@ def run_command(args: Sequence[str], cwd: Path) -> int:
 def check_gofmt(repo_root: Path) -> int:
     """Return non-zero when gofmt would change files."""
     print("$ gofmt -l .")
-    completed = subprocess.run(["gofmt", "-l", "."], cwd=repo_root, text=True, capture_output=True)
+    completed = subprocess.run(
+        ["gofmt", "-l", "."], cwd=repo_root, text=True, capture_output=True
+    )
     if completed.stdout.strip():
         print(completed.stdout, end="")
         print("gofmt reported unformatted files", file=sys.stderr)
@@ -159,7 +173,11 @@ def act(action: str, repo_root: Path) -> int:
         return 0
 
     commands: list[tuple[str, Sequence[str] | None, Path]] = [
-        ("validate manifest", [sys.executable, "scripts/validate_agent_tasks.py", "agent_tasks.json"], repo_root),
+        (
+            "validate manifest",
+            [sys.executable, "scripts/validate_agent_tasks.py", "agent_tasks.json"],
+            repo_root,
+        ),
     ]
 
     if action in {"validate-fast", "validate-full"}:
@@ -171,14 +189,29 @@ def act(action: str, repo_root: Path) -> int:
 
     if action == "validate-full":
         commands = [
-            ("validate manifest", [sys.executable, "scripts/validate_agent_tasks.py", "agent_tasks.json"], repo_root),
+            (
+                "validate manifest",
+                [sys.executable, "scripts/validate_agent_tasks.py", "agent_tasks.json"],
+                repo_root,
+            ),
             ("gofmt", None, repo_root),
             ("npm ci", ["npm", "ci"], repo_root / "web"),
             ("npm build", ["npm", "run", "build"], repo_root / "web"),
             ("copy dashboard", None, repo_root),
             ("go vet", ["go", "vet", "./..."], repo_root),
             ("go test", ["go", "test", "./..."], repo_root),
-            ("go build", ["go", "build", "-ldflags=-s -w", "-o", "notion-manager", "./cmd/notion-manager"], repo_root),
+            (
+                "go build",
+                [
+                    "go",
+                    "build",
+                    "-ldflags=-s -w",
+                    "-o",
+                    "notion-manager",
+                    "./cmd/notion-manager",
+                ],
+                repo_root,
+            ),
         ]
 
     for name, command, cwd in commands:
@@ -214,10 +247,16 @@ def main(argv: list[str] | None = None) -> int:
     """Run the local Rool loop helper."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo-root", default=".", help="repository root")
-    parser.add_argument("--manifest", default="agent_tasks.json", help="task manifest path relative to repo root")
+    parser.add_argument(
+        "--manifest",
+        default="agent_tasks.json",
+        help="task manifest path relative to repo root",
+    )
     parser.add_argument("--task-id", default=None, help="optional exact task id")
     parser.add_argument("--risk-ceiling", choices=["low", "medium"], default="medium")
-    parser.add_argument("--validation", choices=["none", "manifest", "fast", "full"], default="manifest")
+    parser.add_argument(
+        "--validation", choices=["none", "manifest", "fast", "full"], default="manifest"
+    )
     return run_loop(parser.parse_args(argv))
 
 
