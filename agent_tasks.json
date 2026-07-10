@@ -7831,7 +7831,7 @@
       "title": "Diagnose stopped quality loop for autonomous PR #520",
       "area": "automation",
       "risk": "low",
-      "status": "todo",
+      "status": "done",
       "description": "Autonomous recovery circuit breaker stopped PR #520 at SHA `c289b349450ba017335037509d9f14fd2d628b34` for `proxy-audit-context-loss-metric`. Diagnose why repeated quality-fix prompts did not converge. Sanitized reason: История последних failed SHA/reasons:\n- `c289b349450ba017335037509d9f14fd2d628b34`: No task moved to done or blocked in agent_tasks.json; autonomous PR has no durable task state update.\n- `381b89b74efa4b87deddeb9d20c0bb9c7bf94eba`: No task moved to done or blocked in agent_tasks.json; autonomous PR has no durable task state update.\n- `3c2008890dd7d1bf580eb894a7d5ebe9cc3452af`: Task proxy-audit-context-loss-metric is operational/diagnostic but the PR changed only tests and agent_tasks.json.; Task",
       "allowed_paths": [
         ".github/scripts/jules-recovery-router.py",

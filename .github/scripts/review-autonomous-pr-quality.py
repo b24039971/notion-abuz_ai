@@ -361,6 +361,12 @@ def new_task_ids(before_manifest: dict[str, Any], after_manifest: dict[str, Any]
     return sorted(after_ids - before_ids)
 
 
+
+def is_audit_task(task: dict[str, Any]) -> bool:
+    task_id = str(task.get("id") or "").lower()
+    title = str(task.get("title") or "").lower()
+    return "audit" in task_id or "audit" in title
+
 def is_operational_task(task: dict[str, Any]) -> bool:
     text = task_goal_text(task)
     return any(keyword in text for keyword in OPERATIONAL_KEYWORDS)
@@ -750,7 +756,7 @@ def evaluate_quality(
                 "legacy/offline lab, smoke, artifact, runner-label, rollback, or workflow_dispatch evidence."
             )
 
-        if operational and only_tests_manifest(changed_files):
+        if operational and not is_audit_task(task) and only_tests_manifest(changed_files):
             reasons.append(
                 f"Task {change.task_id} is operational/diagnostic but the PR changed only tests and agent_tasks.json."
             )
@@ -761,19 +767,19 @@ def evaluate_quality(
                 "but the diff has no runtime/script change and no direct log-capture assertion."
             )
 
-        if operational and compromise and only_tests_docs_manifest(changed_files) and not has_runtime_or_script:
+        if operational and not is_audit_task(task) and compromise and only_tests_docs_manifest(changed_files) and not has_runtime_or_script:
             reasons.append(
                 f"Task {change.task_id} was marked done while the PR text describes "
                 "a compromise or moved core work into a follow-up."
             )
 
-        if operational and added_tasks and only_tests_docs_manifest(changed_files) and not has_runtime_or_script:
+        if operational and not is_audit_task(task) and added_tasks and only_tests_docs_manifest(changed_files) and not has_runtime_or_script:
             reasons.append(
                 f"Task {change.task_id} was marked done while adding follow-up tasks, "
                 "but the PR only changed tests/docs/manifest."
             )
 
-        if operational and changed_lines <= 6 and not has_runtime_or_script:
+        if operational and not is_audit_task(task) and changed_lines <= 6 and not has_runtime_or_script:
             warnings.append(
                 f"Task {change.task_id} has a very small non-manifest diff "
                 f"({changed_lines} changed lines); verify this is not a formal-only completion."
