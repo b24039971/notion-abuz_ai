@@ -219,6 +219,7 @@ cp example.config.yaml config.yaml
 ## Разработчики
 
 - **b24039971** ([Abuz_ai](https://github.com/b24039971)) — Основатель и главный разработчик.
+- **Omnividente** ([Omnividente](https://github.com/Omnividente)) — Со-разработчик, автор улучшенной версии прокси и интеграции ИИ-агентов.
 - **m86470138-bot** ([m86470138-bot](https://github.com/m86470138-bot)) — Со-разработчик.
 
 ---
